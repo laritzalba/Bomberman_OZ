@@ -1,6 +1,6 @@
 # ----------------------------
 # group nb 108
-# noma1 : 68171400 Lartza Cabrera Alba
+# noma1 : 68171400 Laritza Cabrera Alba
 # noma2 : name2 Magali Legast
 # ----------------------------
 
