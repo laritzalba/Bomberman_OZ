@@ -7,3 +7,6 @@ Group nb 108
 
 Rapport: 
 https://www.overleaf.com/5222778125yqfnjkfxcvxy
+
+Player for interoperability :
+https://github.com/Nicwalle/LINGI1131-Bomberman-Players
