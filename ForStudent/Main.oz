@@ -1,12 +1,21 @@
 functor
 import
+   System
+   OS
+   Browser  
    GUI
    Input
    PlayerManager
-   System
+  
 define
-  PortPlayer 
+  PortPlayer
+  PortWindow
+
 in
- {System.show 'Hello World'}
+ {System.show 'Start'}
+ 
+ PortWindow = {GUI.portWindow}
+ {Send PortWindow buildWindow}
+
 
 end

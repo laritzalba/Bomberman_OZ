@@ -33,8 +33,8 @@ in
   
 	proc {TreatStream Stream }
 		case Stream
-		of Msg|S2 then
-			{TreatStream S2}
+		of Msg|Stail then
+			{TreatStream Stail}
 		else skip %something went wrong
 		end
 	end
