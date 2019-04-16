@@ -12,10 +12,12 @@ define
   PortWindow
 
 in
- {System.show 'Start'}
  
+ %%%%%%%%%%%%%%%%%%%%%%% Main %%%%%%%%%%%%%%%%%%%%%%%
  PortWindow = {GUI.portWindow}
  {Send PortWindow buildWindow}
+
+
 
 
 end

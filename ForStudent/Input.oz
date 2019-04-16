@@ -1,4 +1,6 @@
 functor
+import
+   OS
 export
    isTurnByTurn:IsTurnByTurn
    useExtention:UseExtention
@@ -18,6 +20,11 @@ export
    timingBombMin:TimingBombMin
    timingBombMax:TimingBombMax
 define
+   NewRow
+   NewColumn
+   CheckBoxPosition
+   NbRow
+   NbColumn
    IsTurnByTurn UseExtention PrintOK
    NbRow NbColumn Map
    NbBombers Bombers ColorBombers
@@ -36,16 +43,59 @@ in
 
 %%%% Description of the map %%%%
    
-   NbRow = 7
+   NbRow = 13
    NbColumn = 13
-   Map = [[1 1 1 1 1 1 1 1 1 1 1 1 1]
+
+   fun {NewColumn Count}
+      if Count==0 then nil
+      else 
+         local Random N in 
+            N=6
+            Random = ({OS.rand} mod 30)                  
+            if (Random =< N) then
+               1|{NewColumn Count-1}  % wall (black and gray)
+            elseif (Random =<N+2) then 
+               2|{NewColumn Count-1}  % box with points (orange light)
+            elseif (Random =< N+5) then
+               3|{NewColumn Count-1} % box with bonus (orange dark)
+            elseif (Random =<N+6) then 
+               4|{NewColumn Count-1} % flor with spawn (green blue)
+            else
+               0|{NewColumn Count-1} % simple floor (blue)
+            end
+         end
+      end
+   end
+  
+   fun {NewRow Count}
+      if Count==0 then nil
+      else
+         {NewColumn NbColumn}|{NewRow Count-1}
+      end
+   end
+
+   Map = {NewRow NbRow}
+
+   fun{CheckBoxPosition Map} 
+    % TO DO
+    /*
+      at least one size is not wall
+      the map may be cut in two parts
+      there is not accesible points 
+      Check all possiblities    
+    */
+   end
+  
+  /* Map = [
+     [1 1 1 1 1 1 1 1 1 1 1 1 1]
 	  [1 4 0 2 2 2 2 2 2 2 0 4 1]
 	  [1 0 1 3 1 2 1 2 1 2 1 0 1]
 	  [1 2 2 2 3 2 2 2 2 3 2 2 1]
 	  [1 0 1 2 1 2 1 3 1 2 1 0 1]
 	  [1 4 0 2 2 2 2 2 2 2 0 4 1]
-	  [1 1 1 1 1 1 1 1 1 1 1 1 1]]
-
+	  [1 1 1 1 1 1 1 1 1 1 1 1 1]
+     ]
+  */
 %%%% Players description %%%%
 
    NbBombers = 2
