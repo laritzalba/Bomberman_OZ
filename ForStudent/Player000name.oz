@@ -25,9 +25,19 @@ in
    end
 
    
-   proc{TreatStream Stream} %% TODO you may add some arguments if needed
-      %% TODO complete
-   end
+   %proc{TreatStream Stream} %% TODO you may add some arguments if needed
+     
+     
+   %end
+
+  
+	proc {TreatStream Stream }
+		case Stream
+		of Msg|S2 then
+			{TreatStream S2}
+		else skip %something went wrong
+		end
+	end
    
 
 end

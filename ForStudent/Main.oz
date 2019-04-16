@@ -3,9 +3,10 @@ import
    GUI
    Input
    PlayerManager
+   System
 define
-   
+  PortPlayer 
 in
-   %% Implement your controller here
+ {System.show 'Hello World'}
 
 end

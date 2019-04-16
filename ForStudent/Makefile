@@ -7,12 +7,12 @@
 # TODO complete the header with your group number, your noma's and full names
 
 # TODO write your makefile here
-all :compile
+all :compile run
 
 compile :
 	@ozc -c *.oz
 
-start :
+run :
 	@ozengine Main.ozf
 
 clean :
