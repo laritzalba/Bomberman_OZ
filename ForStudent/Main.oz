@@ -40,8 +40,17 @@ in
 
 
   fun {RandomPosition}
-    % (Math.random() * ((max - min) + 1)) + min
-     pt(x:({OS.rand} mod Input.nbColumn) y:({OS.rand} mod Input.nbRow))
+    local X Y in
+      X= ({OS.rand} mod (Input.nbColumn-2))
+      Y= ({OS.rand} mod (Input.nbRow-2))
+      if (X =<1)  then 
+         if (Y=<1) then pt(x:X+2 y:Y+2)
+         else pt(x:X+2 y:Y) end
+      elseif Y=<1 then pt(x:X y:Y+2)
+      else 
+        pt(x:X y:Y)  
+      end
+     end 
      % TO DO 
      % Verify if this position is not a wall or box or other 
   end
@@ -65,10 +74,6 @@ in
 
    
 
-
-
-
- 
  %%%%%%%%%%%%%%%%%%%%%%% Main %%%%%%%%%%%%%%%%%%%%%%%
  PortWindow = {GUI.portWindow}
  {Send PortWindow buildWindow}
