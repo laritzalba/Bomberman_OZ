@@ -11,6 +11,7 @@ export
    nbBombers:NbBombers
    bombers:Bombers
    colorsBombers:ColorBombers
+   namesBombers:NamesBombers
    nbLives:NbLives
    nbBombs:NbBombs
    thinkMin:ThinkMin
@@ -22,12 +23,11 @@ export
 define
    NewRow
    NewColumn
-   CheckBoxPosition
    NbRow
    NbColumn
    IsTurnByTurn UseExtention PrintOK
    NbRow NbColumn Map
-   NbBombers Bombers ColorBombers
+   NbBombers Bombers ColorBombers NamesBombers
    NbLives NbBombs
    ThinkMin ThinkMax
    TimingBomb TimingBombMin TimingBombMax Fire
@@ -43,7 +43,7 @@ in
 
 %%%% Description of the map %%%%
    
-   NbRow = 13
+   NbRow = 10
    NbColumn = 13
 
    fun {NewColumn Count CountRow}
@@ -62,7 +62,7 @@ in
          else 
             % map not borders 
             local Random N in 
-               N=6
+               N=4
                Random = ({OS.rand} mod 30)                  
                if (Random =< N) then
                   1|{NewColumn Count-1 CountRow}  % wall (black and gray)
@@ -116,6 +116,7 @@ in
    NbBombers = 2
    Bombers = [player000bomber player000bomber]
    ColorBombers = [yellow red]
+   NamesBombers = [lary alba]
 
 %%%% Parameters %%%%
 
