@@ -1,6 +1,7 @@
 functor
 import
    OS
+   System
 export
    isTurnByTurn:IsTurnByTurn
    useExtention:UseExtention
@@ -8,6 +9,7 @@ export
    nbRow:NbRow
    nbColumn:NbColumn
    map:Map
+   mapDescription:MapDescription
    nbBombers:NbBombers
    bombers:Bombers
    colorsBombers:ColorBombers
@@ -24,13 +26,16 @@ define
    NewRow
    NewColumn
    NbRow
+   CountMapBoxes
+   CountBoxesInList
    NbColumn
    IsTurnByTurn UseExtention PrintOK
-   NbRow NbColumn Map
+   NbRow NbColumn Map MapDescription
    NbBombers Bombers ColorBombers NamesBombers
    NbLives NbBombs
    ThinkMin ThinkMax
    TimingBomb TimingBombMin TimingBombMax Fire
+   
 in 
 
 
@@ -42,9 +47,6 @@ in
 
 
 %%%% Description of the map %%%%
-   
-   NbRow = 10
-   NbColumn = 13
 
    fun {NewColumn Count CountRow}
       if Count==0 then nil
@@ -87,21 +89,30 @@ in
       end
    end
 
-   Map = {NewRow NbRow}
-
-   /*
-   fun{CheckBoxPosition Map} 
-    % TO DO
-    
-      at least one size is not wall
-      the map may be cut in two parts
-      there is not accesible points 
-      Check all possiblities    
-    
+   
+ 
+ fun {CountBoxesInList List Row Column BoxPointPosition BoxBonusPosition FloorSpwan}
+      case List 
+       of nil then dscrpt(boxPointPosition:BoxPointPosition boxBonusPosition:BoxBonusPosition floorSapwan:FloorSpwan)
+       [] H|T then 
+          if (H == 2)     then {CountBoxesInList T Row Column+1 {Append BoxPointPosition [pt(x:Column y:Row)]} BoxBonusPosition FloorSpwan}
+          elseif (H == 3) then {CountBoxesInList T Row Column+1 BoxPointPosition {Append BoxBonusPosition [pt(x:Column y:Row)]} FloorSpwan}
+          elseif (H == 4) then {CountBoxesInList T Row Column+1 BoxPointPosition  BoxBonusPosition {Append FloorSpwan [pt(x:Column y:Row)]}} 
+          else {CountBoxesInList T Row Column+1 BoxPointPosition BoxBonusPosition FloorSpwan}
+          end 
+      end  
    end
-   */
-  
-  /* Map = [
+
+   fun {CountMapBoxes Map Row Dscrpt} 
+     case Map
+       of nil then Dscrpt
+       [] H|T then {CountMapBoxes T Row+1 {CountBoxesInList H Row 1 Dscrpt.boxPointPosition Dscrpt.boxBonusPosition Dscrpt.floorSapwan}}
+     end
+   end
+
+  NbRow = 7
+  NbColumn = 13
+  Map = [
      [1 1 1 1 1 1 1 1 1 1 1 1 1]
 	  [1 4 0 2 2 2 2 2 2 2 0 4 1]
 	  [1 0 1 3 1 2 1 2 1 2 1 0 1]
@@ -110,7 +121,12 @@ in
 	  [1 4 0 2 2 2 2 2 2 2 0 4 1]
 	  [1 1 1 1 1 1 1 1 1 1 1 1 1]
      ]
-  */
+
+   %%%%%%%%% ATTENTION %%%%%%%%%%
+  % Map = {NewRow NbRow} // this is the call for random map,  then random map need somme fix bug 
+ 
+  MapDescription= {CountMapBoxes Map 1 dscrpt(boxPointPosition:nil boxBonusPosition:nil floorSapwan:nil)} 
+
 %%%% Players description %%%%
 
    NbBombers = 2
