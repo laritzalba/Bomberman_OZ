@@ -5,7 +5,8 @@ import
    GUI
    Input
    PlayerManager
-  
+export 
+   portWindow:PortWindow
 define
   Show
   PortWindow
@@ -30,6 +31,9 @@ define
   PlayOnce
   PalyAndSkipDeadBombers
   LoopTurnByTurn
+  AreRemainigBoxes
+  ShowWinner
+  ShooseWinner
 
 in
   %%% TOOLS %%%%
@@ -73,7 +77,9 @@ in
                            nbBombs:Input.nbBombs 
                            explodeBombIn:Input.timingBomb
                            currentBombPos:_
-                           currentPoints:_ )
+                           currentPoints:0 
+                           nbGetBox:0
+                           )
             ExtendedBomber|{CreatePortBomberAndExtend T Count+1}
           end
       end
@@ -176,6 +182,21 @@ in
       end
    end
 
+   fun{AreRemainigBoxes Bombers_Alive}
+      fun {CountRemainingBoxes Bombers_Alive Count}
+         case Bombers_Alive
+         of nil then Count 
+         [] H|T then {CountRemainingBoxes T (Count + H.nbGetBox)}
+         end
+      end
+    
+    TotalTakenBoxes RemainingBoxes 
+    in    
+    TotalTakenBoxes = {CountRemainingBoxes Bombers_Alive 0}
+    RemainingBoxes =Input.nbBoxes - TotalTakenBoxes 
+    if (RemainingBoxes == 0 ) then false else true end
+   end
+
 
    fun{PalyAndSkipDeadBombers ExtendedBomber}
      {Delay 400}
@@ -193,13 +214,39 @@ in
       end
    end
 
+ % To Do: verify if two bomber have the same point at the end, what to do 
+   fun{ShooseWinner Alive_ExtendedBomber}
+      fun{HelperShooseWinner Alive_ExtendedBomber Winner Points}
+         case Alive_ExtendedBomber
+         of nil then Winner         
+         [] H|T then 
+            if (H.currentPoints > Points) then {HelperShooseWinner T H H.currentPoints}
+            else {HelperShooseWinner T Winner Points} 
+            end  
+         end   
+      end
+   in 
+     {HelperShooseWinner Alive_ExtendedBomber Alive_ExtendedBomber.1 Alive_ExtendedBomber.1.currentPoints}
+  end
+
+   proc{ShowWinner Winner}
+     ID in
+     {Send Winner.mybomberPort getId(ID)}
+     {Wait ID}
+     {Send PortWindow displayWinner(ID)}    
+   end
+
 
     proc{LoopTurnByTurn ExtendedBomber}
-      local Bombers_Alive Alive in      
+      local Bombers_Alive Alive Remaining in      
          Bombers_Alive = {PalyAndSkipDeadBombers ExtendedBomber}
          Alive = {Length Bombers_Alive}
-         if (Alive == 0) then skip % every body dead
-         elseif (Alive ==1) then skip % one winer
+            % every body dead --> end
+         if (Alive == 0) then skip 
+            % one winer --> end show winer
+         elseif (Alive ==1) then skip 
+             % there are not more boxes left --> end show winer(s)
+         elseif {AreRemainigBoxes Bombers_Alive} == false then skip 
          else 
           {LoopTurnByTurn Bombers_Alive}
          end
@@ -221,7 +268,6 @@ in
  NbSpawPosition= {Length Input.mapDescription.floorSapwan}
  RandomListSpawPosition= {ShuffleListNumber Input.mapDescription.floorSapwan}
  
- {Show RandomListSpawPosition}
 
  {Init_Show_Bombers ExtendedPortBombers 1}
 

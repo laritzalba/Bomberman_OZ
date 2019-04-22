@@ -9,6 +9,7 @@ export
    nbRow:NbRow
    nbColumn:NbColumn
    map:Map
+   nbBoxes:NbBoxes
    mapDescription:MapDescription
    nbBombers:NbBombers
    bombers:Bombers
@@ -30,7 +31,7 @@ define
    CountBoxesInList
    NbColumn
    IsTurnByTurn UseExtention PrintOK
-   NbRow NbColumn Map MapDescription
+   NbRow NbColumn Map MapDescription NbBoxes
    NbBombers Bombers ColorBombers NamesBombers
    NbLives NbBombs
    ThinkMin ThinkMax
@@ -126,6 +127,7 @@ in
   % Map = {NewRow NbRow} // this is the call for random map,  then random map need somme fix bug 
  
   MapDescription= {CountMapBoxes Map 1 dscrpt(boxPointPosition:nil boxBonusPosition:nil floorSapwan:nil)} 
+  NbBoxes = {Length MapDescription.boxPointPosition } + {Length MapDescription.boxBonusPosition}
 
 %%%% Players description %%%%
 
