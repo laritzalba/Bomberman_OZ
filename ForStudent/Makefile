@@ -11,9 +11,14 @@ all :compile run
 
 compile :
 	@ozc -c *.oz
-
+gameC : 
+	@ozc -c GameControler.oz
+gameM : 
+	@ozc -c Main.oz
+gameI : 
+	@ozc -c Input.oz
 run :
 	@ozengine Main.ozf
 
 clean :
-	@rm -rf GUI.ozf Input.ozf Main.ozf PlayerManager.ozf
+	@rm -rf GUI.ozf Input.ozf Main.ozf PlayerManager.ozf GameControler.ozf

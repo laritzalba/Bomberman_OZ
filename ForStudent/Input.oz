@@ -8,9 +8,7 @@ export
    printOK:PrintOK
    nbRow:NbRow
    nbColumn:NbColumn
-   map:Map
-   nbBoxes:NbBoxes
-   mapDescription:MapDescription
+   map:Map   
    nbBombers:NbBombers
    bombers:Bombers
    colorsBombers:ColorBombers
@@ -23,6 +21,10 @@ export
    timingBomb:TimingBomb
    timingBombMin:TimingBombMin
    timingBombMax:TimingBombMax
+   %% Not gived
+   nbBoxes:NbBoxes
+   mapDescription:MapDescription
+
 define
    NewRow
    NewColumn
@@ -115,16 +117,16 @@ in
   NbColumn = 13
   Map = [
      [1 1 1 1 1 1 1 1 1 1 1 1 1]
-	  [1 4 0 2 2 2 2 2 2 2 0 4 1]
+	  [1 4 0 0 2 2 2 2 2 2 0 4 1]
 	  [1 0 1 3 1 2 1 2 1 2 1 0 1]
-	  [1 2 2 2 3 2 2 2 2 3 2 2 1]
+	  [1 0 2 2 3 2 2 2 2 3 2 2 1]
 	  [1 0 1 2 1 2 1 3 1 2 1 0 1]
-	  [1 4 0 2 2 2 2 2 2 2 0 4 1]
+	  [1 4 0 2 2 2 2 0 0 0 0 4 1]
 	  [1 1 1 1 1 1 1 1 1 1 1 1 1]
      ]
 
    %%%%%%%%% ATTENTION %%%%%%%%%%
-  % Map = {NewRow NbRow} // this is the call for random map,  then random map need somme fix bug 
+   %Map = {NewRow NbRow} % this is the call for random map,  then random map need somme fix bug 
  
   MapDescription= {CountMapBoxes Map 1 dscrpt(boxPointPosition:nil boxBonusPosition:nil floorSapwan:nil)} 
   NbBoxes = {Length MapDescription.boxPointPosition } + {Length MapDescription.boxBonusPosition}
@@ -132,9 +134,9 @@ in
 %%%% Players description %%%%
 
    NbBombers = 2
-   Bombers = [player000bomber player000bomber]
-   ColorBombers = [yellow red]
-   NamesBombers = [lary alba]
+   Bombers = [player000bomber player000bomber ]
+   ColorBombers = [yellow red blue]
+   NamesBombers = [lary alba github]
 
 %%%% Parameters %%%%
 
