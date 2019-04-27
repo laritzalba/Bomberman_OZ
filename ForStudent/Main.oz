@@ -17,7 +17,7 @@ define
   RandomListSpawPosition
   RandomPositionNotSpawn
   ShowWinner
-  FloorSapwan
+  FloorSpawn
   SimulationPort
   PortWindowSimulation 
 
@@ -29,10 +29,14 @@ define
   %Init
   RandomPosition
   Init_Show_Bombers
+  InitGamestate
   
   %Turn by turn
   LoopTurnByTurn
   ShowAction
+  TurnByTurn
+  CreateGame
+
 
 in
   %%% TOOLS %%%%
@@ -123,7 +127,7 @@ in
       [] H|T then
          {Show 'Drawing: '#H}
          {Send PortWindow H} 
-         {Delay 100}
+         {Delay 300}
          {ShowAction T}
       end
    end 
@@ -153,30 +157,37 @@ in
    Port
 end
    
+proc{TurnByTurn GameState PortWindow}   
+   {LoopTurnByTurn {Adjoin GameState gameState(portWindow: PortWindow)} GameState.playersList}
+end 
+
+
+fun{InitGamestate}
+     GameState  FloorSpawn
+in     
+      %Create the state of the game  
+      GameState = {GameControler.createState }
+      % Get List with spawn posiion
+      FloorSpawn= GameState.wfloorSapwan
+      %{Show 'FlooSpawn is nul: '# {FlooSpawn == nil }}
+      NbSpawPosition= {Length FloorSpawn}
+      % Random List of spawn position (variable global) to use in inner fun 
+      RandomListSpawPosition= {ShuffleListNumber FloorSpawn}
+      % init and show bombers 
+      {Init_Show_Bombers GameState}
+end 
+
+ proc {CreateGame}
+      PortWindow = {GUI.portWindow}
+      {Send PortWindow buildWindow}
+      GameState = {InitGamestate}
+      {TurnByTurn GameState PortWindow}
+ end
 
  %%%%%%%%%%%%%%%%%%%%%%% Main %%%%%%%%%%%%%%%%%%%%%%%
  %PortWindow =  {SimulationPort}
- PortWindow = {GUI.portWindow}
- {Send PortWindow buildWindow}
-
  
-
- %Create the state of the game  
- GameState = {GameControler.createState }
- % Get List with spawn posiion
- FloorSapwan = GameState.wfloorSapwan
- {Show 'FlooSpawn is nul: '# {FlooSpawn == nil }}
- NbSpawPosition= {Length FloorSapwan}
- % Random List of spawn position (variable global) to use in inner fun 
- RandomListSpawPosition= {ShuffleListNumber FloorSapwan}
- 
-  % init and show bombers 
- GameStateInit= {Init_Show_Bombers GameState}
-
- 
- {Show GameStateInit}
-
- {LoopTurnByTurn {Adjoin GameState gameState(portWindow: PortWindow)} GameStateInit.playersList}
+  {CreateGame}
 
 end
 

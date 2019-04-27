@@ -112,6 +112,7 @@ in
       end
    end
 
+   % Create a random Map,  Attention --> NbRow >=3 and NbColumn >=3
    fun{CreateMap}
       Map RandPos
    in 
@@ -125,7 +126,8 @@ in
 
     Map = {CreateMap}
 
-  /* Map = [[1 1 1 1 1 1 1 1 1 1 1 1 1]
+
+/* Map = [[1 1 1 1 1 1 1 1 1 1 1 1 1]
 	  [1 4 0 2 2 2 2 2 2 2 0 4 1]
 	  [1 0 1 3 1 2 1 2 1 2 1 0 1]
 	  [1 2 2 2 3 2 2 2 2 3 2 2 1]
@@ -156,7 +158,7 @@ in
 
 %%%% Parameters %%%%
 
-   NbLives = 3
+   NbLives = 10
    NbBombs = 1
  
    ThinkMin = 500  % in millisecond

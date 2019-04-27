@@ -15,6 +15,7 @@ export
    countMapBoxes:CountMapBoxes
 define
    Show
+   Show2
    GameState
    UpdateGamestate
    CreateState
@@ -56,11 +57,22 @@ define
    GotAWinner
    AddWinnerMessage 
    Find
+    % Simultaneous
+    CreateBombSimultaneos
+
+  % Debug
+   LocalDebug= false
+   LocalDebug2= true 
 
 in
  %%% TOOLS %%%%
   proc {Show Msg}
-    if (Input.printOK == true) then {System.show Msg}
+    if (LocalDebug == true) then {System.show Msg}
+    else skip end 
+  end
+
+   proc {Show2 Msg}
+    if (LocalDebug2 == true) then {System.show Msg}
     else skip end 
   end
  %%% END TOOLS %%%%
@@ -188,6 +200,10 @@ in
    fun{CreateBomb Position ExtendedBomber}
      bomb(extendedBomber:ExtendedBomber bombpos:Position timingBomb:Input.timingBomb)
    end
+
+    fun{CreateBombSimultaneos Position ExtendedBomber}
+      bomb(extendedBomber:ExtendedBomber bombpos:Position timingBomb: ({OS.rand} mod (Input.timingBombMax-Input.timingBombMin))+Input.timingBombMin )
+    end
    
 
    %%%%%%%%%%%%%% END INIT %%%%%%%%%%%%%%%%%%%%%
@@ -242,6 +258,7 @@ in
                         {Wait Pos}
                         {LoopToCheckDamage T 
                             {Append MessageList [spawnPlayer(ID2 Pos)]}
+                            % respaw in the next round Atttention change
                             {Append WindowsList [hidePlayer(ID) lifeUpdate(ID2 NewLife) spawnPlayer(ID2 Pos)]}
                             Dead
                             {Append Alive [BomberHited]}
@@ -561,14 +578,6 @@ fun{ExploseListPoints GameState ListPointToExplose Bomb}
          {Wait ID} 
          displayWinner(ID)|{AddWinnerMessage T}
         end
-        /*
-      ID
-      in
-         {Send PlayerList.1.mybomberPort getId(ID)}
-         {Wait ID} 
-         {Show displayWinner(ID)}
-         [displayWinner(ID)]
-         */
     end 
 
     fun {GetWinner GameState}
@@ -591,12 +600,11 @@ fun{ExploseListPoints GameState ListPointToExplose Bomb}
     end
 
     fun{GotAWinner GameState}
-        WinnerList 
-    NewGameState Message in 
-
+        WinnerList NewGameState Message 
+    in 
        {Show 'Got Winner 1'}
         WinnerList = {GetWinner GameState} 
-        {Show 'Got Winner 2'# WinnerList # {List.is WinnerList}}
+        {Show2 'Got Winner 2'# WinnerList # {List.is WinnerList}}
         Message= {AddWinnerMessage WinnerList}
         {Show 'winner message '#Message}
         NewGameState= {Adjoin GameState gameState(
@@ -633,12 +641,11 @@ fun{ExploseListPoints GameState ListPointToExplose Bomb}
                 {GotAWinner UpdateGameState}      
             elseif ({Length UpdateGameState.playersList } == 1) 
                 then  % one winner --> end show winner        
-                {Show '3 actionToShow' # GameState.actionToShow}
-                
+                {Show '3 actionToShow' # GameState.actionToShow}                
                 {GotAWinner UpdateGameState} 
             elseif UpdateGameState.nbRemainingBoxes == 0 
                 then % there are not more boxes left --> end show winner(s)            
-                {Show '4'}
+                {Show2 '4'}
                 {GotAWinner UpdateGameState} 
             elseif ({FuncEvaluation UpdateGameState} == 1) 
                 then  % one winner --> end show winner  
