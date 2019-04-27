@@ -29,6 +29,11 @@ define
    %Extra
    NewColumn
    NewRow
+   ReplaceValInList
+   RandomPositionNotSpawn
+   ReplaceValInList
+   CreateMap
+   RandomPositionNotSpawn
 in 
 
 %%%% Style of game %%%%
@@ -80,19 +85,67 @@ in
       end
    end
 
+    fun {RandomPositionNotSpawn}
+    local X Y in
+         X= ({OS.rand} mod (NbColumn-2))
+         Y= ({OS.rand} mod (NbRow-2))
+         if (X =<1)  then 
+            if (Y=<1) then pt(x:X+2 y:Y+2)
+            else pt(x:X+2 y:Y) end
+         elseif Y=<1 then pt(x:X y:Y+2)
+         else 
+         pt(x:X y:Y)  
+         end
+     end 
+     % TO DO 
+     % Verify if this position is not a wall or box or other 
+  end
+  
+    fun{ReplaceValInList List Val N Count}
+      case List 
+      of nil then nil 
+      [] H|T then
+         if(Count==N) then Val|T
+         else
+           H|{ReplaceValInList T Val N Count+1}
+         end
+      end
+   end
+
+   fun{CreateMap}
+      Map RandPos
+   in 
+    Map = {NewRow NbRow} % this is the call for random map
+    RandPos = {RandomPositionNotSpawn}
+    {ReplaceValInList Map {ReplaceValInList {Nth Map RandPos.y} 4 RandPos.x 1} RandPos.y 1}
+    end
 
    NbRow = 7
    NbColumn = 13
-   Map = [[1 1 1 1 1 1 1 1 1 1 1 1 1]
+
+    Map = {CreateMap}
+
+  /* Map = [[1 1 1 1 1 1 1 1 1 1 1 1 1]
 	  [1 4 0 2 2 2 2 2 2 2 0 4 1]
 	  [1 0 1 3 1 2 1 2 1 2 1 0 1]
 	  [1 2 2 2 3 2 2 2 2 3 2 2 1]
 	  [1 0 1 2 1 2 1 3 1 2 1 0 1]
 	  [1 4 0 2 2 2 2 2 2 2 0 4 1]
 	  [1 1 1 1 1 1 1 1 1 1 1 1 1]]
+*/
 
+/*Map = [[1 1 1 1 1 1 1 1 1 1 1 1 1]
+	  [1 4 0 0 0 0 0 0 0 0 0 4 1]
+	  [1 0 0 0 0 0 0 0 0 0 1 0 1]
+	  [1 0 0 2 3 2 2 2 2 3 2 2 1]
+	  [1 0 0 0 0 0 0 0 0 0 0 0 1]
+	  [1 4 0 0 0 2 2 0 0 0 0 4 1]
+	  [1 1 1 1 1 1 1 1 1 1 1 1 1]]
+
+*/
    %%%%%%%%% ATTENTION %%%%%%%%%%
-  %Map = {NewRow NbRow} % this is the call for random map,  then random map need somme fix bug 
+   
+
  
 
 %%%% Players description %%%%

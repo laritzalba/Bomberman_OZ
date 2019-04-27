@@ -55,6 +55,7 @@ define
    GetState
    GotAWinner
    AddWinnerMessage 
+   Find
 
 in
  %%% TOOLS %%%%
@@ -85,7 +86,7 @@ in
                 
          unveiledPoint:nil
          unveiledBonus:nil
-         nbRemainingPointBonusToget: {Length MapDescription.boxPointPosition} + {Length MapDescription.boxBonusPosition}       
+         nbRemainingBoxes: {Length MapDescription.boxPointPosition} + {Length MapDescription.boxBonusPosition}       
 
          bombList:nil
          messageList: nil
@@ -155,6 +156,16 @@ in
       end
    end
 
+    fun{Find L Item}
+        case L
+        of nil then false
+        []H|T then
+            if (H== Item ) then true
+            else {Find T Item}
+            end
+        end
+    end
+
    % Replace A Bomber in PlayerList 
    fun{Replace List ItemToFind ItemToReplace}
         case List 
@@ -174,8 +185,8 @@ in
     {Adjoin GameState gameState(map:NewMap)}
    end 
 
-   fun{CreateBomb Position BomberId}
-     bomb(bombpos:Position count:Input.timingBomb bomberId:BomberId)
+   fun{CreateBomb Position ExtendedBomber}
+     bomb(extendedBomber:ExtendedBomber bombpos:Position timingBomb:Input.timingBomb)
    end
    
 
@@ -203,7 +214,7 @@ in
    end 
 
 
-   fun{CheckDamage GameState ListHitedBombers BombersNOThited }
+   fun{CheckDamage GameState ListHitedBombers BombersNOThited PointInFire}
 
         fun{LoopToCheckDamage ListHitedBombers MessageList WindowsList Dead Alive}
             case ListHitedBombers
@@ -243,7 +254,7 @@ in
             end 
         end     
     Rec in 
-        Rec= {LoopToCheckDamage ListHitedBombers nil nil nil nil}
+        Rec= {LoopToCheckDamage ListHitedBombers nil [spawnFire(PointInFire)] nil nil}
         {Adjoin GameState gameState(
             actionToShow: {Append GameState.actionToShow Rec.windowsList}
             messageList: {Append GameState.messageList Rec.messageList}
@@ -269,41 +280,54 @@ in
  % TO DO ATTENTION
   fun{CreateListeToExplose BombPos GameState}
       fun{CheckLoop X Y Xsup Ysup N}
+            {Show 'Create List Explose 1'}
              XFin YFin in
             if(Xsup<0) then XFin=X-1 else XFin=(X)+(Xsup) end
             if(Ysup<0) then YFin=Y-1 else YFin=(Y)+(Ysup) end
-            
+            {Show 'Create List Explose 2'}
             if (XFin =< 0) then nil
             elseif(XFin>Input.nbColumn) then nil
             elseif(YFin=<0) then nil
             elseif(YFin>Input.nbRow) then nil
             elseif(N=<0) then nil
             else
+                {Show 'Create List Explose 3'}
                 Point in 
                 Point = pt(x:X+Xsup y:Y+Ysup)
-                if {List.member GameState.boxPoint Point} 
-                    then pt(x:XFin y:YFin)|nil % is a box with points
-                elseif {List.member GameState.boxBonus Point}  
-                    then pt(x:XFin y:YFin)|nil %is a box with bonus 
+                {Show 'Bomb Pos'#Point}
+                if {Find GameState.boxPoint Point} 
+                    then 
+                     {Show 'Create List Explose 4 Floor with box point ' # GameState.boxPoint}
+                    pt(x:XFin y:YFin)|nil % is a box with points 2
+                elseif {Find GameState.boxBonus Point}  
+                    then 
+                     {Show 'Create List Explose 5 Floor with spawn ' # GameState.boxBonus}
+                    pt(x:XFin y:YFin)|nil %is a box with bonus 3
+                elseif {Find GameState.wfloorSapwan Point}
+                    then 
+                     {Show 'Create List Explose 6' # GameState.wfloorSapwan}
+                    pt(x:XFin y:YFin)|{CheckLoop XFin YFin Xsup Ysup N-1} %% is a spawn position 4 
                 else Item in
                     Item= {Nth {Nth GameState.map Y+Ysup} X+Xsup} 
+                     {Show 'Create List Explose 7 (possible here are 1 and 0) Item found in map is: ' # Item}
                     case Item
-                        of 1 then nil %% is a wall
-                        [] 4 then pt(x:XFin y:YFin)|{CheckLoop XFin YFin Xsup Ysup N-1} %% is a spawn position
-                        [] 0 then pt(x:XFin y:YFin)|{CheckLoop XFin YFin Xsup Ysup N-1} %% is a flooor tile 
+                        of 1 then nil %% is a wall 1
+                        else  pt(x:XFin y:YFin)|{CheckLoop XFin YFin Xsup Ysup N-1} %% is a flooor tile 0
                     end
                 end 
             end
       end
-   N in
+   N PointsInFire in
    N= Input.fire
-        {Append 
+       PointsInFire= {Append 
 		   {Append 
 			    {Append 
 		           {Append {CheckLoop BombPos.x BombPos.y 0 1 N} {CheckLoop BombPos.x BombPos.y 0 ~1 N}}
 				 {CheckLoop BombPos.x BombPos.y 1 0 N}}
 			{CheckLoop BombPos.x BombPos.y ~1 0 N}} 
 		[BombPos]}
+        {Show 'Point in fire '#PointsInFire}
+        PointsInFire
    end
 
   
@@ -312,40 +336,47 @@ fun{ExploseListPoints GameState ListPointToExplose Bomb}
     of nil then GameState
     [] PointInFire|T then 
         NewBoxPointList NewBoxBonusList NewGameState in
-        NewBoxPointList= {List.substract GameState.boxPoint PointInFire}
-        NewBoxBonusList= {List.substract GameState.boxBonus PointInFire}
+        {Show ' ExploseListPoints: Box Point List' #GameState.boxPoint #{List.is GameState.boxPoint}}
+        NewBoxPointList= {List.subtract GameState.boxPoint PointInFire}
+         {Show 'Explose List Point 2'#NewBoxPointList}
+        NewBoxBonusList= {List.subtract GameState.boxBonus PointInFire}
+         {Show 'Explose List Point 3' # NewBoxBonusList}
         if ({Length NewBoxPointList} < GameState.nbBoxPoint) then
         % there is a box point to explose
             %Update Gamestate           
             NewGameState = {Adjoin GameState 
-            gamestate( actionToShow:{Append GameState.actionToShow [hideBox(PointInFire) spawnPoint(PointInFire)]}
-                       messageList:{Append GameState.messageList [boxRemoved(PointInFire)]}
+            gameState( actionToShow:{Append GameState.actionToShow [spawnFire(PointInFire) hideBox(PointInFire) spawnPoint(PointInFire)]}
+                       messageList:{Append GameState.messageList [ boxRemoved(PointInFire)]}
                        boxPoint:NewBoxPointList 
                        nbBoxPoint:{Length NewBoxPointList}
-                       unveiledPointOrBonus: {Append GameState.unveiledPointOrBonus [PointInFire]}
+                       unveiledPoint: {Append GameState.unveiledPoint [PointInFire]}
+                       nbRemainingBoxes: GameState.nbRemainingBoxes -1
                      )}
             {ExploseListPoints NewGameState T Bomb}            
         elseif ({Length NewBoxBonusList} < GameState.nbBoxBonus) then 
         % there is a box bonus to explose  
             %Update Gamestate           
             NewGameState = {Adjoin GameState 
-              gamestate(
-                    actionToShow:{Append GameState.actionToShow [hideBox(PointInFire) spawnBonus(PointInFire)]}
+              gameState(
+                    actionToShow:{Append GameState.actionToShow [spawnFire(PointInFire) hideBox(PointInFire) spawnBonus(PointInFire)]}
                     messageList:{Append GameState.messageList [boxRemoved(PointInFire)]}
                     boxBonus:NewBoxBonusList 
                     nbBoxBonus:{Length NewBoxBonusList}
-                    unveiledPointOrBonus: {Append GameState.unveiledPointOrBonus [PointInFire]}                             
+                    unveiledBonus: {Append GameState.unveiledBonus [PointInFire]} 
+                    nbRemainingBoxes: GameState.nbRemainingBoxes -1                            
             )}
             {ExploseListPoints NewGameState T Bomb}   
         else ListHitedBombers BombersNOThited Rec in
             Rec= {CheckHitBomber GameState.playersList PointInFire nil nil}
             BombersNOThited = Rec.bombersNothited
             ListHitedBombers = Rec.bomersHited            
-            if (ListHitedBombers.bomersHited \= nil) then 
+            if (ListHitedBombers \= nil) then 
               % bomber got hit 
-               NewGameState = {CheckDamage GameState ListHitedBombers BombersNOThited}           
+               NewGameState = {CheckDamage GameState ListHitedBombers BombersNOThited PointInFire} 
+               {ExploseListPoints NewGameState T Bomb}           
             else  % there is nothing in this tile --> continue to check next point in fire
-              {ExploseListPoints GameState T Bomb} 
+               NewGameState = {Adjoin GameState gameState(actionToShow:{Append GameState.actionToShow [spawnFire(PointInFire)]})}
+              {ExploseListPoints NewGameState T Bomb} 
             end  
         end           
     end
@@ -369,11 +400,13 @@ fun{ExploseListPoints GameState ListPointToExplose Bomb}
 
     fun{KaBoom Bomb GameState}    
       % no update bomblist here
-      NewGamestate1 NewGameState2 NewGameState3 ListPointToExplose
+      NewGamestate1 NewGameState2 NewGameState3 ListPointToExplose Result
     in
       ListPointToExplose = {CreateListeToExplose Bomb.bombpos GameState}      
       NewGamestate1= {Adjoin GameState gameState(actionToShow:{Append GameState.actionToShow [hideBomb(Bomb.bombpos)]})}
       NewGameState2= {ExploseListPoints NewGamestate1 ListPointToExplose Bomb}
+      {Send Bomb.extendedBomber.mybomberPort add(bomb 1 Result)}
+      {Wait Result}
       %{Delay 700} % ???
       {HidePointInFire NewGameState2 ListPointToExplose}
     end
@@ -385,11 +418,11 @@ fun{ExploseListPoints GameState ListPointToExplose Bomb}
             of nil then rec(lb:UpdatedListBomb gs:GameState)
             [] Bomb|T then 
                 if (Bomb.timingBomb - 1) == 0 then  % explode                       
-                    {Helper_UpdateBomb {KaBoom Bomb GameState} T {List.substract UpdatedListBomb Bomb}} 
+                    {Helper_UpdateBomb {KaBoom Bomb GameState} T {List.subtract UpdatedListBomb Bomb}} 
                 else  
                     local NewtimingBomb in % decrement this bomb timer and continue to check bombTimer
-                        NewtimingBomb= (Bomb.count-1)
-                        {Helper_UpdateBomb GameState T {Append UpdatedListBomb [{Adjoin Bomb bomb(count:NewtimingBomb)}]}}
+                        NewtimingBomb= (Bomb.timingBomb-1)
+                        {Helper_UpdateBomb GameState T {Append UpdatedListBomb [{Adjoin Bomb bomb(timingBomb:NewtimingBomb)}]}}
                     end 
                 end
             end      
@@ -403,7 +436,7 @@ fun{ExploseListPoints GameState ListPointToExplose Bomb}
     end
     
     fun{DoAction GameState ExtendedBomber}
-        {Delay 400}
+        %{Delay 400}
             ID Action UpdateGameState in  
             %%PlayOnce               
             {Send ExtendedBomber.mybomberPort doaction(ID Action)}
@@ -428,8 +461,8 @@ fun{ExploseListPoints GameState ListPointToExplose Bomb}
                                 unveiledPoint: {List.subtract GameState.unveiledPoint Pos}
                                 messageList: {Append GameState.messageList [movePlayer(ID Pos)]} 
                                 actionToShow: {Append GameState.actionToShow [movePlayer(ID Pos) 
-                                                                        hidePoint(Pos)
-                                                                        scoreUpdate(ID Result)]}                            
+                                                                              hidePoint(Pos)
+                                                                              scoreUpdate(ID Result)]}                            
                     )}
                     UpdateGameState
                 elseif {List.member Pos GameState.unveiledBonus} then
@@ -483,7 +516,7 @@ fun{ExploseListPoints GameState ListPointToExplose Bomb}
                     UpdateGameState= {Adjoin GameState gameState(
                             messageList:  {Append GameState.messageList [bombPlanted(Pos)]} 
                             actionToShow: {Append GameState.actionToShow [spawnBomb(Pos)]}
-                            bombList: {Append GameState.bombList [{CreateBomb Pos ID}]}
+                            bombList: {Append GameState.bombList [{CreateBomb Pos ExtendedBomber}]}
                     )}
                     UpdateGameState
             %[] add extention exemple shield                                           
@@ -509,21 +542,33 @@ fun{ExploseListPoints GameState ListPointToExplose Bomb}
 
    % to delete
     fun{UpdateGamestate GameState}
-        NewGameState GameStateUpdateBomb GameStateUpdateBox
+        NewGameState GameStateUpdateBomb
     in 
-       %GameStateUpdateBomb = {UpdateBomb GameStateUpdateBox}
-       GameState
+       % move and explose bomb 
+       {UpdateBomb GameState}
+       
+       %Only move 
+       %GameState
     end
 
     fun {AddWinnerMessage PlayerList}
+        {Show {List.is PlayerList}}
         case PlayerList
         of nil then nil 
         [] Winner|T then
          ID in
-         {Send Winner.mybomberPort get(ID)}
+         {Send Winner.mybomberPort getId(ID)}
          {Wait ID} 
          displayWinner(ID)|{AddWinnerMessage T}
         end
+        /*
+      ID
+      in
+         {Send PlayerList.1.mybomberPort getId(ID)}
+         {Wait ID} 
+         {Show displayWinner(ID)}
+         [displayWinner(ID)]
+         */
     end 
 
     fun {GetWinner GameState}
@@ -534,7 +579,7 @@ fun{ExploseListPoints GameState ListPointToExplose Bomb}
             CurrentScore in 
             CurrentScore = H.score 
             if (CurrentScore > MaxScore) then {CheckScore T [H] CurrentScore}
-            elseif (CurrentScore == MaxScore) then {CheckScore T {Append WinnerList H} MaxScore}
+            elseif (CurrentScore == MaxScore) then {CheckScore T {Append WinnerList [H]} MaxScore}
             else {CheckScore T WinnerList MaxScore}
             end
         end  
@@ -547,13 +592,20 @@ fun{ExploseListPoints GameState ListPointToExplose Bomb}
 
     fun{GotAWinner GameState}
         WinnerList 
-    in 
+    NewGameState Message in 
+
+       {Show 'Got Winner 1'}
         WinnerList = {GetWinner GameState} 
-        {Adjoin GameState gameState(
+        {Show 'Got Winner 2'# WinnerList # {List.is WinnerList}}
+        Message= {AddWinnerMessage WinnerList}
+        {Show 'winner message '#Message}
+        NewGameState= {Adjoin GameState gameState(
                         endGame: true
                         winnerList:WinnerList
-                        actionToShow: {Append GameState.actionToShow {AddWinnerMessage WinnerList}}    
+                        actionToShow: {Append GameState.actionToShow Message}    
         )}
+        {Show 'final actionto Show'#NewGameState.actionToShow}
+        NewGameState
     end 
 
     fun{GetState ExtendedBomber}
@@ -581,9 +633,10 @@ fun{ExploseListPoints GameState ListPointToExplose Bomb}
                 {GotAWinner UpdateGameState}      
             elseif ({Length UpdateGameState.playersList } == 1) 
                 then  % one winner --> end show winner        
-                {Show '3'}
+                {Show '3 actionToShow' # GameState.actionToShow}
+                
                 {GotAWinner UpdateGameState} 
-            elseif UpdateGameState.nbRemainingPointBonusToget == 0 
+            elseif UpdateGameState.nbRemainingBoxes == 0 
                 then % there are not more boxes left --> end show winner(s)            
                 {Show '4'}
                 {GotAWinner UpdateGameState} 

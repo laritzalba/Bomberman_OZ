@@ -123,6 +123,7 @@ in
       [] H|T then
          {Show 'Drawing: '#H}
          {Send PortWindow H} 
+         {Delay 100}
          {ShowAction T}
       end
    end 
@@ -130,6 +131,7 @@ in
 
    proc {LoopTurnByTurn GameState PlayersList}
       if (GameState.endGame == true) then % end of the game 
+         {Show 'Main Action to show '#GameState.actionToShow}
          {ShowAction GameState.actionToShow}
       else 
          case PlayersList 
@@ -163,6 +165,7 @@ end
  GameState = {GameControler.createState }
  % Get List with spawn posiion
  FloorSapwan = GameState.wfloorSapwan
+ {Show 'FlooSpawn is nul: '# {FlooSpawn == nil }}
  NbSpawPosition= {Length FloorSapwan}
  % Random List of spawn position (variable global) to use in inner fun 
  RandomListSpawPosition= {ShuffleListNumber FloorSapwan}
@@ -174,12 +177,6 @@ end
  {Show GameStateInit}
 
  {LoopTurnByTurn {Adjoin GameState gameState(portWindow: PortWindow)} GameStateInit.playersList}
-
-
-
-
-
-
 
 end
 
