@@ -1,18 +1,16 @@
 functor
-import
-   OS
-   System
+import % Extra
+   OS  % Extra 
 export
    isTurnByTurn:IsTurnByTurn
    useExtention:UseExtention
    printOK:PrintOK
    nbRow:NbRow
    nbColumn:NbColumn
-   map:Map   
+   map:Map
    nbBombers:NbBombers
    bombers:Bombers
    colorsBombers:ColorBombers
-   namesBombers:NamesBombers
    nbLives:NbLives
    nbBombs:NbBombs
    thinkMin:ThinkMin
@@ -21,26 +19,17 @@ export
    timingBomb:TimingBomb
    timingBombMin:TimingBombMin
    timingBombMax:TimingBombMax
-   %% Not gived
-   nbBoxes:NbBoxes
-   mapDescription:MapDescription
-
 define
-   NewRow
-   NewColumn
-   NbRow
-   CountMapBoxes
-   CountBoxesInList
-   NbColumn
    IsTurnByTurn UseExtention PrintOK
-   NbRow NbColumn Map MapDescription NbBoxes
-   NbBombers Bombers ColorBombers NamesBombers
+   NbRow NbColumn Map
+   NbBombers Bombers ColorBombers
    NbLives NbBombs
    ThinkMin ThinkMax
    TimingBomb TimingBombMin TimingBombMax Fire
-   
+   %Extra
+   NewColumn
+   NewRow
 in 
-
 
 %%%% Style of game %%%%
    
@@ -50,8 +39,7 @@ in
 
 
 %%%% Description of the map %%%%
-
-   fun {NewColumn Count CountRow}
+     fun {NewColumn Count CountRow}
       if Count==0 then nil
        % map borders up and down 
       elseif (CountRow == 1) then 
@@ -92,51 +80,26 @@ in
       end
    end
 
-   
- 
- fun {CountBoxesInList List Row Column BoxPointPosition BoxBonusPosition FloorSpwan}
-      case List 
-       of nil then dscrpt(boxPointPosition:BoxPointPosition boxBonusPosition:BoxBonusPosition floorSapwan:FloorSpwan)
-       [] H|T then 
-          if (H == 2)     then {CountBoxesInList T Row Column+1 {Append BoxPointPosition [pt(x:Column y:Row)]} BoxBonusPosition FloorSpwan}
-          elseif (H == 3) then {CountBoxesInList T Row Column+1 BoxPointPosition {Append BoxBonusPosition [pt(x:Column y:Row)]} FloorSpwan}
-          elseif (H == 4) then {CountBoxesInList T Row Column+1 BoxPointPosition  BoxBonusPosition {Append FloorSpwan [pt(x:Column y:Row)]}} 
-          else {CountBoxesInList T Row Column+1 BoxPointPosition BoxBonusPosition FloorSpwan}
-          end 
-      end  
-   end
 
-   fun {CountMapBoxes Map Row Dscrpt} 
-     case Map
-       of nil then Dscrpt
-       [] H|T then {CountMapBoxes T Row+1 {CountBoxesInList H Row 1 Dscrpt.boxPointPosition Dscrpt.boxBonusPosition Dscrpt.floorSapwan}}
-     end
-   end
-
-  NbRow = 7
-  NbColumn = 13
-  Map = [
-     [1 1 1 1 1 1 1 1 1 1 1 1 1]
-	  [1 4 0 0 2 2 2 2 2 2 0 4 1]
+   NbRow = 7
+   NbColumn = 13
+   Map = [[1 1 1 1 1 1 1 1 1 1 1 1 1]
+	  [1 4 0 2 2 2 2 2 2 2 0 4 1]
 	  [1 0 1 3 1 2 1 2 1 2 1 0 1]
-	  [1 0 2 2 3 2 2 2 2 3 2 2 1]
+	  [1 2 2 2 3 2 2 2 2 3 2 2 1]
 	  [1 0 1 2 1 2 1 3 1 2 1 0 1]
-	  [1 4 0 2 2 2 2 0 0 0 0 4 1]
-	  [1 1 1 1 1 1 1 1 1 1 1 1 1]
-     ]
+	  [1 4 0 2 2 2 2 2 2 2 0 4 1]
+	  [1 1 1 1 1 1 1 1 1 1 1 1 1]]
 
    %%%%%%%%% ATTENTION %%%%%%%%%%
-   %Map = {NewRow NbRow} % this is the call for random map,  then random map need somme fix bug 
+  %Map = {NewRow NbRow} % this is the call for random map,  then random map need somme fix bug 
  
-  MapDescription= {CountMapBoxes Map 1 dscrpt(boxPointPosition:nil boxBonusPosition:nil floorSapwan:nil)} 
-  NbBoxes = {Length MapDescription.boxPointPosition } + {Length MapDescription.boxBonusPosition}
 
 %%%% Players description %%%%
 
    NbBombers = 2
-   Bombers = [player000bomber player000bomber ]
-   ColorBombers = [yellow red blue]
-   NamesBombers = [lary alba github]
+   Bombers = [player000bomber player000bomber]
+   ColorBombers = [yellow red]
 
 %%%% Parameters %%%%
 
@@ -149,6 +112,5 @@ in
    Fire = 3
    TimingBomb = 3 
    TimingBombMin = 3000 % in millisecond
-   TimingBombMax = 4000 % in millisecond
-
+   TimingBombMax = 4000 % in millisecon
 end

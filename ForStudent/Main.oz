@@ -16,6 +16,10 @@ define
   NbSpawPosition
   RandomListSpawPosition
   RandomPositionNotSpawn
+  ShowWinner
+  FloorSapwan
+  SimulationPort
+  PortWindowSimulation 
 
   %Helper
    ShuffleListNumber
@@ -111,7 +115,9 @@ in
 
    %%%%%%%%%%%%%%%%%%%%%%% Turn by Turn Helper Functions %%%%%%%%%%%%%%%%%%%%%%%
 
+   
    proc{ShowAction ActionList}
+   %% Attention entre explosion and hide 
       case ActionList
       of nil then skip 
       [] H|T then
@@ -122,32 +128,44 @@ in
    end 
 
 
-    proc {LoopTurnByTurn GameState}
-       UpdateGameState 
-    in
-      UpdateGameState = {GameControler.play GameState} 
-      if (UpdateGameState.winer == true) then 
-         {ShowAction UpdateGameState.actionToShow} 
+   proc {LoopTurnByTurn GameState PlayersList}
+      if (GameState.endGame == true) then % end of the game 
+         {ShowAction GameState.actionToShow}
       else 
-         {ShowAction UpdateGameState.actionToShow}
-         {LoopTurnByTurn UpdateGameState}
+         case PlayersList 
+         of nil then {LoopTurnByTurn GameState GameState.playersList} % end round, start new round 
+         []ExtendedBombers|T then 
+            UpdateGameState in
+            UpdateGameState = {GameControler.play GameState ExtendedBombers}
+               {ShowAction UpdateGameState.actionToShow}
+               {LoopTurnByTurn UpdateGameState T} 
+         end
       end   
-  end 
-
+   end 
  
 
+fun{SimulationPort}
+   Port Stream 
+in
+   {NewPort Stream Port} 
+   Port
+end
    
 
  %%%%%%%%%%%%%%%%%%%%%%% Main %%%%%%%%%%%%%%%%%%%%%%%
+ %PortWindow =  {SimulationPort}
  PortWindow = {GUI.portWindow}
  {Send PortWindow buildWindow}
-  
+
+ 
+
  %Create the state of the game  
  GameState = {GameControler.createState }
- % Get List with spawn posiion 
- NbSpawPosition= {Length Input.mapDescription.floorSapwan}
+ % Get List with spawn posiion
+ FloorSapwan = GameState.wfloorSapwan
+ NbSpawPosition= {Length FloorSapwan}
  % Random List of spawn position (variable global) to use in inner fun 
- RandomListSpawPosition= {ShuffleListNumber Input.mapDescription.floorSapwan}
+ RandomListSpawPosition= {ShuffleListNumber FloorSapwan}
  
   % init and show bombers 
  GameStateInit= {Init_Show_Bombers GameState}
@@ -155,7 +173,7 @@ in
  
  {Show GameStateInit}
 
- {LoopTurnByTurn {Adjoin GameState gameState(portWindow: PortWindow)}}
+ {LoopTurnByTurn {Adjoin GameState gameState(portWindow: PortWindow)} GameStateInit.playersList}
 
 
 
