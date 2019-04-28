@@ -1,7 +1,7 @@
 # ----------------------------
 # group nb 108
 # noma1 : 68171400 Laritza Cabrera Alba
-# noma2 : name2 Magali Legast
+# noma2 : 78531500 Magali Legast
 # ----------------------------
 
 # TODO complete the header with your group number, your noma's and full names
