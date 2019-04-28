@@ -40,7 +40,7 @@ in
    
    IsTurnByTurn = true
    UseExtention = false
-   PrintOK = true
+   PrintOK = false
 
 
 %%%% Description of the map %%%%
@@ -165,7 +165,7 @@ in
    ThinkMax = 2000 % in millisecond
    
    Fire = 3
-   TimingBomb = 3 
+   TimingBomb = 5 
    TimingBombMin = 3000 % in millisecond
    TimingBombMax = 4000 % in millisecon
 end

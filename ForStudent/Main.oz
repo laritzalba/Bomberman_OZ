@@ -125,7 +125,7 @@ in
       case ActionList
       of nil then skip 
       [] H|T then
-         {Show 'Drawing: '#H}
+         %{Show 'Drawing: '#H}
          {Send PortWindow H} 
          {Delay 300}
          {ShowAction T}

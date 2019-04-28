@@ -127,6 +127,7 @@ in
             ExtendedBomber = extendedBomber(mybomberPort:MyBomber 
                                             currentPosition:_ 
                                             score:0
+                                            isOnBoard:true
                                             )
             ExtendedBomber|{CreatePortBomberAndExtend T Count+1}
           end
@@ -433,14 +434,15 @@ fun{ExploseListPoints GameState ListPointToExplose Bomb}
         fun {Helper_UpdateBomb GameState ListBomb UpdatedListBomb}
             case ListBomb
             of nil then rec(lb:UpdatedListBomb gs:GameState)
-            [] Bomb|T then 
-                if (Bomb.timingBomb - 1) == 0 then  % explode                       
+            [] Bomb|T then  NewtimingBomb in 
+                NewtimingBomb = Bomb.timingBomb -1 
+                {Show2 'Bomb Timing' # NewtimingBomb # Bomb.extendedBomber}  
+                if NewtimingBomb == 0 then  % explode                      
                     {Helper_UpdateBomb {KaBoom Bomb GameState} T {List.subtract UpdatedListBomb Bomb}} 
                 else  
-                    local NewtimingBomb in % decrement this bomb timer and continue to check bombTimer
-                        NewtimingBomb= (Bomb.timingBomb-1)
-                        {Helper_UpdateBomb GameState T {Append UpdatedListBomb [{Adjoin Bomb bomb(timingBomb:NewtimingBomb)}]}}
-                    end 
+                    %  continue to check bombTimer
+                    NewtimingBomb= (Bomb.timingBomb-1)
+                    {Helper_UpdateBomb GameState T {Append UpdatedListBomb [{Adjoin Bomb bomb(timingBomb:NewtimingBomb)}]}}
                 end
             end      
         end
@@ -496,10 +498,10 @@ fun{ExploseListPoints GameState ListPointToExplose Bomb}
                                                                                   )}
                         UpdateGameState= {Adjoin GameState gameState(
                                 playersList: {Replace GameState.playersList ExtendedBomber UpdateExtenderBombers}
-                                unveiledPoint: {List.subtract GameState.unveiledBonus Pos}
+                                unveiledBonus: {List.subtract GameState.unveiledBonus Pos}
                                 messageList: {Append GameState.messageList [movePlayer(ID Pos)]} 
                                 actionToShow: {Append GameState.actionToShow [movePlayer(ID Pos) 
-                                                                        hidePoint(Pos)
+                                                                        hideBonus(Pos)
                                                                         scoreUpdate(ID Result)]}
                         )} 
                         UpdateGameState
@@ -625,11 +627,14 @@ fun{ExploseListPoints GameState ListPointToExplose Bomb}
         State
     end
 
-  %% Play One turn
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  % Play One turn
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   fun {Play GameState ExtendedBomber}
     UpdateGameState NewGameState BroadC
   in   
-        if {CheckIfAlive ExtendedBomber} then         
+        if {CheckIfAlive ExtendedBomber} then  
+           {Show2 'ExtendedBomber id: '#ExtendedBomber}       
           % this player is alive
             UpdateGameState = {UpdateGamestate {RefreshList GameState}}
             {Show '1'}
@@ -663,6 +668,15 @@ fun{ExploseListPoints GameState ListPointToExplose Bomb}
             GameState
         end 
    end
+
+
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  % 
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+
 
    
 end % End Module
