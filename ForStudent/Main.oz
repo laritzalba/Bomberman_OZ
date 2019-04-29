@@ -38,7 +38,7 @@ define
   % Simultaneous game
    Simultaneous
    LoopSimulataneous
-   CheckAvailability
+   CreateThread
   
 in
 
@@ -137,7 +137,6 @@ in
       [] H|T then
          %{Show 'Drawing: '#H}
          {Send PortWindow H} 
-         {Delay 100}
          {ShowAction T}
       end
    end 
@@ -196,30 +195,56 @@ end
  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-   proc {LoopSimulataneous Bomberman PortGameState}
+   proc {LoopSimulataneous Bomberman PortGameState ThreadID}
          Decision in 
+         {Delay ({OS.rand} mod (Input.thinkMax-Input.thinkMin))+Input.thinkMin}
          {Send PortGameState decision(Decision)}
-          {Wait Decision}
-         if Decision == true then 
-         % Loop until is abailable to make changes 
-         {LoopSimulataneous Bomberman PortGameState}       
+         {Wait Decision}
+         if (Decision == false) then 
+             % Loop until is abailable to make changes 
+             {Show 'ThreadID: '# ThreadID #'Decision is '#Decision}
+             {LoopSimulataneous Bomberman PortGameState ThreadID}       
          else 
-            GameState in
-            % Play once and free GameState 
+            GameState Coucou in
+            {Show 'ThreadID: '# ThreadID #'Decision is acepted'#Decision}
+            % Play once and free GameState    
+
             {Send PortGameState getGameState(GameState)}
             {Wait GameState}
-            if (GameState.endGame == true) then % end of the game 
-               {Show 'Main Action to show '#GameState.actionToShow}
+             {Show 'ThreadID: '# ThreadID #'Gamestate to paly '#GameState.actionToShow}
+
+    %%%%% To Delete Test Message Port %%%%%%
+    {Send PortGameState testMessage(Coucou)}
+    {Wait Coucou}
+    {Show 'Message test to Port GameState Coucoou2 '#Coucou}
+    %%%%%%% End To Delete%%%%%%%%%%%%%%%%%%%
+
+           if (GameState.endGame == true) then % end of the game 
+               {Show 'ThreadID: '# ThreadID #'Main Action to show 3 '} %#GameState.actionToShow}
                {ShowAction GameState.actionToShow}
             else 
                UpdateGameState in
+               {Show 'ThreadID: '# ThreadID #'Playing 4'}
                {Send PortGameState play(UpdateGameState Bomberman)}
                {Wait UpdateGameState}
+                 {Show 'ThreadID: '# ThreadID #'Playing 5'}
                {ShowAction UpdateGameState.actionToShow}
-               {Send PortGameState  freeGamestate()}
-               {LoopTurnByTurn Bomberman PortGameState} 
+               {Send PortGameState freeGameState()}
+               {Show 'ThreadID: '# ThreadID #'Gamestate is free '}
+               {LoopSimulataneous Bomberman PortGameState ThreadID} 
             end
          end    
+   end 
+
+
+   proc{CreateThread PlayersList PortGameState Count}
+      case PlayersList
+      of nil then skip
+      []Bomberman|Tail then 
+        {Show 'Creating thread 2'}
+        thread {LoopSimulataneous Bomberman PortGameState Count} end 
+        {CreateThread Tail PortGameState Count+1}
+      end
    end 
 
   proc{Simultaneous}
@@ -231,19 +256,17 @@ end
     {Send PortGameState getGameState(GameState)}
     {Wait GameState}
     UpdatedGameState= {InitGamestate GameState}
-    {Show 'Update Init '}
+    {Show 'Update Init 1 '}
     {Send PortGameState updateGameState(UpdatedGameState)}
-    {Show 'end'}
+    {CreateThread UpdatedGameState.playersList PortGameState 1}
 
+   
     %%%%% To Delete Test Message Port %%%%%%
     {Send PortGameState testMessage(Coucou)}
     {Wait Coucou}
     {Show 'Message test to Port GameState '#Coucou}
     %%%%%%% End To Delete%%%%%%%%%%%%%%%%%%%
-
-
-
-  end
+end
 
 
   

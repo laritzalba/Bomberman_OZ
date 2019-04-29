@@ -205,7 +205,7 @@ in
    end
 
     fun{CreateBombSimultaneos Position ExtendedBomber}
-      bomb(extendedBomber:ExtendedBomber bombpos:Position timingBomb: ({OS.rand} mod (Input.timingBombMax-Input.timingBombMin))+Input.timingBombMin )
+      bomb(extendedBomber:ExtendedBomber bombpos:Position timingBomb:({OS.rand} mod (Input.timingBombMax-Input.timingBombMin))+Input.timingBombMin )
     end
    
 
@@ -692,26 +692,29 @@ fun{ExploseListPoints GameState ListPointToExplose Bomb}
     of nil then skip
     [] Message|Stail then
            case Message
-        of play(NewGameState ExtendedBomber) then NewGameState in 
+        of play(NewGameState ExtendedBomber) then 
+                {Show2 'PLAY THIS GAMESTATE IS BOUND '#GameState.actionToShow}
                 NewGameState= {Play GameState ExtendedBomber}
-                 {Show2 'play(NewGameState ExtendedBomber)'}
+                 {Show2 'play(NewGameState ExtendedBomber)' # NewGameState.actionToShow}
                 {TreatStream Stail NewGameState}
         [] decision(DecisionResult) then NewGameState in
                 if GameState.decision == true then 
-                NewGameState= {Adjoin GameState gameState(decision:false)}
-                DecisionResult = true 
+                    NewGameState= {Adjoin GameState gameState(decision:false)}
+                    DecisionResult = true 
+                    {TreatStream Stail NewGameState } 
                 else 
-                DecisionResult = false 
+                    DecisionResult = false 
+                    {Show2 'decision(DecisionResult)'# DecisionResult}
+                    {TreatStream Stail GameState} 
                 end
-                {Show2 'decision(DecisionResult)'}
-                {TreatStream Stail NewGameState } 
         [] freeGameState() then  NewGameState in
                 NewGameState= {Adjoin GameState gameState(decision:true)}
                  {Show2 'updatingDecision(Val)'}
                 {TreatStream Stail NewGameState}
         [] getGameState(ResultGameState) then 
-                ResultGameState = GameState
-                 {Show2 'get Gamestate'}
+                 ResultGameState= GameState
+                 {Show2 'THIS GAMESTATE IS BOUND '#GameState}
+                 {Show2 'get Gamestate()' #ResultGameState}
                 {TreatStream Stail GameState}
         [] updateGameState(NewGameState) then 
                 {Show2 'update NewGamestate'}
