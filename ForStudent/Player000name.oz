@@ -11,6 +11,7 @@ define
    CheckTile
    MoveRandom
    DoAction
+   AddObject
    TreatStream
    Name = 'namefordebug'
 in
@@ -38,7 +39,7 @@ in
    proc{MakeSpawn PlayerInfo NewPlayer}
       ifPlayerInfo.state == off && PlayerInfo.lives > 0 then
          %TODO Make spawn. Est-ce qu'il faut faire quelque chose en plus???
-         NewPlayer = infos(id: PlayerInfo.ID lives:PlayerInfo.lives bombs:PlayerInfo.bombes score:PlayerInfo.score state:on currentPos:PlayerInfo.initPos initPos:PlayerInfo.initPos)
+         NewPlayer = infos(id: PlayerInfo.id lives:PlayerInfo.lives bombs:PlayerInfo.bombes score:PlayerInfo.score state:on currentPos:PlayerInfo.initPos initPos:PlayerInfo.initPos)
       else
          NewPlayer = null
       end
@@ -89,7 +90,7 @@ in
       in
          Rand = {os.rand} mod 4
          NewPos = {GetNewPos PlayerInfo.currentPos Rand}
-         NewPlayer = infos(id: PlayerInfo.ID lives:PlayerInfo.lives bombs:PlayerInfo.bombes score:PlayerInfo.score state:PlayerInfo.state currentPos:NewPos initPos:PlayerInfo.initPos)
+         NewPlayer = infos(id: PlayerInfo.id lives:PlayerInfo.lives bombs:PlayerInfo.bombes score:PlayerInfo.score state:PlayerInfo.state currentPos:NewPos initPos:PlayerInfo.initPos)
    end
 
    /*
@@ -109,7 +110,7 @@ in
          if({os.rand} mod 10) == 0 then % chance of 0.1 to drop a bomb
             if PlayerInfo.bombes > 0 then
                Action = bomb(PlayerInfo.currentPos)
-               NewPlayer = infos(id: PlayerInfo.ID lives:PlayerInfo.lives bombs:(PlayerInfo.bombes-1) score:PlayerInfo.score state:on currentPos:PlayerInfo.currentPos initPos:PlayerInfo.initPos)
+               NewPlayer = infos(id: PlayerInfo.id lives:PlayerInfo.lives bombs:(PlayerInfo.bombes-1) score:PlayerInfo.score state:PlayerInfo.state currentPos:PlayerInfo.currentPos initPos:PlayerInfo.initPos)
             else
                {MoveRandom PlayerInfo NewPlayer}
                Action = move(NewPlayer.currentPos)
@@ -118,6 +119,36 @@ in
             {MoveRandom PlayerInfo NewPlayer}
             Action = move(NewPlayer.currentPos)
          end
+      end
+   end
+
+   /*
+    * Add [Option] item(s) of type [Type] to the items owned by the player represented byPlayerInfo
+    * @NewPlayer: Updated version of NewPlayer with the new number of item where appropriate
+    * @Result: Updated number of item(s) [Type]
+    * Supported items: 'bomb','point'
+    */
+   proc {AddObject Type Option PlayerInfo NewPlayer Result}
+      if Type == bomb then
+         NewPlayer = infos(id: PlayerInfo.id lives:PlayerInfo.lives bombs:(PlayerInfo.bombes+1) score:PlayerInfo.score state:PlayerInfo.state currentPos:PlayerInfo.currentPos initPos:PlayerInfo.initPos)
+         Result = NewPlayer.bombes
+      else if Type == point then
+         NewPlayer = infos(id: PlayerInfo.id lives:PlayerInfo.lives bombs:PlayerInfo.bombes score:(PlayerInfo.score+Option) state:PlayerInfo.state currentPos:PlayerInfo.currentPos initPos:PlayerInfo.initPos)
+         Result = NewPlayer.score
+      else skip %This option is supported
+      end
+   end
+
+   /*
+    * Update a player that has been hit, taking it off the board and taking off a live if appropriate
+    * @NewPlayer: New version of PlayerInfo with lives diminished by one and state == off if player was on the board and could die
+    *             Null if the player was already off the board or could not die
+    */
+   proc {TakeHit PlayerInfo NewPlayer}
+      if PlayerInfo.state == off then %The player is already off the board
+         NewPlayer = null
+      else %The player is on the board and need to die
+         NewPlayer = infos(id: PlayerInfo.id lives:(PlayerInfo.lives-1) bombs:PlayerInfo.bombes score:PlayerInfo.score state:off currentPos:PlayerInfo.currentPos initPos:PlayerInfo.initPos)
       end
    end
    
@@ -134,7 +165,7 @@ in
          BomberState = PlayerInfo.state
          {TreatStream Tail PlayerInfo}
       []assignSpawn(Pos) then
-         NewInfo = infos(id: PlayerInfo.ID lives:PlayerInfo.lives bombs:PlayerInfo.bombes score: PlayerInfo.score state:PlayerInfo.state currentPos:PlayerInfo.currentPos initPos:Pos)
+         NewInfo = infos(id: PlayerInfo.id lives:PlayerInfo.lives bombs:PlayerInfo.bombes score: PlayerInfo.score state:PlayerInfo.state currentPos:PlayerInfo.currentPos initPos:Pos)
          {TreatStream Tail PlayerInfo} %TODO Est-ce que cette position a été vérifiée comme possible?
       []spawn(BomberID BomberPos) then
          declare NewPlayer
@@ -155,10 +186,15 @@ in
          else
             BomberID = NewPlayer.id
          {TreatStream Tail NewPlayer}
-      []add(Type Options BomberResult) then
-         %TODOOOO create a function for that
+      []add(Type Option BomberResult) then
+         declare NewPlayer
+         {AddObject Type Option PlayerInfo NewPlayer BomberResult}
+         {TreatStream Tail NewPlayer}
       []gotHit(BomberID BomberResult) then
-         %TODOOOO Create a function for that
+         declare NewPlayer
+         {TakeHit PlayerInfo NewPlayer}
+         BomberResult = death(NewPlayer.lives)
+         {TreatStream Tail NewPlayer}
       []info(M) then
          %TODOOOO Create a function for that
       end
