@@ -17,6 +17,8 @@ gameM :
 	@ozc -c Main.oz
 gameI : 
 	@ozc -c Input.oz
+gameB : 
+	@ozc -c Player000name.oz
 run :
 	@ozengine Main.ozf
 

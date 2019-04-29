@@ -5,18 +5,18 @@ import
    Input
    Main
    PlayerManager
+    Projet2019util
    %% Add here the name of the functor of a player  
 export
-   gameState: GameState
    createState: CreateState
    play: Play
    doAction:DoAction
    getWinner:GetWinner
    countMapBoxes:CountMapBoxes
+   portGameState: AccesToGameState
 define
    Show
    Show2
-   GameState
    UpdateGamestate
    CreateState
    InitBomb
@@ -59,6 +59,9 @@ define
    Find
     % Simultaneous
     CreateBombSimultaneos
+    AccesToGameState
+    TreatStream
+     TreatStream2
 
   % Debug
    LocalDebug= false
@@ -79,7 +82,7 @@ in
 
  %%%%%%%%%%%%%%  INIT GAMESTATE %%%%%%%%%%%%%%%%%%%%%
 
-  fun{CreateState }
+ fun{CreateState}
     ExtendedPortBombers  MapDescription
   in 
     ExtendedPortBombers= {CreatePortBomberAndExtend Input.bombers 1} 
@@ -103,7 +106,6 @@ in
          bombList:nil
          messageList: nil
          actionToShow:nil
-         map: Input.map
          portWindow:_
          pointBox:1
          pointBonus:10
@@ -575,10 +577,10 @@ fun{ExploseListPoints GameState ListPointToExplose Bomb}
         case PlayerList
         of nil then nil 
         [] Winner|T then
-         ID in
-         {Send Winner.mybomberPort getId(ID)}
-         {Wait ID} 
-         displayWinner(ID)|{AddWinnerMessage T}
+           ID in
+           {Send Winner.mybomberPort getId(ID)}
+           {Wait ID} 
+           displayWinner(ID)|{AddWinnerMessage T}
         end
     end 
 
@@ -671,12 +673,58 @@ fun{ExploseListPoints GameState ListPointToExplose Bomb}
 
 
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  % 
+  % Simultaneous Port Acces 
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+    fun{AccesToGameState}
+       GameStateBasic GameState Stream Port
+   in
+      {NewPort Stream Port}
+      GameStateBasic = {CreateState} 
+      GameState = {Adjoin GameStateBasic gameState(decision:true)}
+      thread {TreatStream Stream GameState} end
+      Port
+   end 
 
-
-
+   proc{TreatStream Stream GameState}
+    {System.show Stream.1}
+    case Stream
+    of nil then skip
+    [] Message|Stail then
+           case Message
+        of play(NewGameState ExtendedBomber) then NewGameState in 
+                NewGameState= {Play GameState ExtendedBomber}
+                 {Show2 'play(NewGameState ExtendedBomber)'}
+                {TreatStream Stail NewGameState}
+        [] decision(DecisionResult) then NewGameState in
+                if GameState.decision == true then 
+                NewGameState= {Adjoin GameState gameState(decision:false)}
+                DecisionResult = true 
+                else 
+                DecisionResult = false 
+                end
+                {Show2 'decision(DecisionResult)'}
+                {TreatStream Stail NewGameState } 
+        [] freeGameState() then  NewGameState in
+                NewGameState= {Adjoin GameState gameState(decision:true)}
+                 {Show2 'updatingDecision(Val)'}
+                {TreatStream Stail NewGameState}
+        [] getGameState(ResultGameState) then 
+                ResultGameState = GameState
+                 {Show2 'get Gamestate'}
+                {TreatStream Stail GameState}
+        [] updateGameState(NewGameState) then 
+                {Show2 'update NewGamestate'}
+                {TreatStream Stail NewGameState}
+        [] testMessage(Coucou)then
+            Coucou='Coucou'
+            {TreatStream Stail GameState}
+        else
+	        {System.show 'unsupported message'#Message}
+	        {TreatStream Stail GameState}
+         end
+      end
+   end
 
    
 end % End Module

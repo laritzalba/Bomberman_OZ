@@ -40,7 +40,7 @@ in
    
    IsTurnByTurn = true
    UseExtention = false
-   PrintOK = false
+   PrintOK = true
 
 
 %%%% Description of the map %%%%

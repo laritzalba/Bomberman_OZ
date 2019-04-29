@@ -6,10 +6,10 @@ import
    Input
    PlayerManager
    GameControler
+   GameState
 export 
    portWindow:PortWindow
 define
-  GameState
   GameStateInit
   Show
   PortWindow
@@ -19,30 +19,33 @@ define
   ShowWinner
   FloorSpawn
   SimulationPort
-  PortWindowSimulation 
 
-  %Helper
+  %Helper game
    ShuffleListNumber
    DropNthOfList
 
 
-  %Init
+  %Init game
   RandomPosition
   Init_Show_Bombers
   InitGamestate
   
-  %Turn by turn
+  %Turn by turn game
   LoopTurnByTurn
   ShowAction
   TurnByTurn
-  CreateGame
-
-
+  
+  % Simultaneous game
+   Simultaneous
+   LoopSimulataneous
+   CheckAvailability
+  
 in
+
   %%% TOOLS %%%%
-  proc {Show Msg}
+   proc {Show Msg}
 		{System.show Msg}
-	end
+   end
  %%% END TOOLS %%%%
 
 %%%%%%%%%%%%%%%%%%%%%%% Init Helper Functions %%%%%%%%%%%%%%%%%%%%%%%
@@ -98,11 +101,14 @@ in
          case ExtendedBombers
          of nil then nil 
          [] H|T then ID Position in
+                  {Show 'Game State '#GameState}
+                  {Show '2'}
                % Init   
                {Send H.mybomberPort assignSpawn({RandomPosition Count})}
                {Send H.mybomberPort spawn(ID Position)}
                {Wait ID}
                {Wait Position}
+               {Show '3'}
                % Show 
                {Send PortWindow initPlayer(ID)}
                {Send PortWindow spawnPlayer(ID Position)}
@@ -110,14 +116,18 @@ in
          end
       end
       UpdatePlayerList in 
+       {Show '1'# GameState.playersList }
       UpdatePlayerList= {Helper_Init_Show_Bombers GameState.playersList 1}
+      {Show '4'}
       {Adjoin GameState gameState(playersList: UpdatePlayerList)}
       
    end
 
 
 
-   %%%%%%%%%%%%%%%%%%%%%%% Turn by Turn Helper Functions %%%%%%%%%%%%%%%%%%%%%%%
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ % Turn By Turn
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
    
    proc{ShowAction ActionList}
@@ -127,7 +137,7 @@ in
       [] H|T then
          %{Show 'Drawing: '#H}
          {Send PortWindow H} 
-         {Delay 300}
+         {Delay 100}
          {ShowAction T}
       end
    end 
@@ -157,16 +167,10 @@ in
    Port
 end
    
-proc{TurnByTurn GameState PortWindow}   
-   {LoopTurnByTurn {Adjoin GameState gameState(portWindow: PortWindow)} GameState.playersList}
-end 
 
-
-fun{InitGamestate}
-     GameState  FloorSpawn
+fun{InitGamestate GameState}
+    FloorSpawn
 in     
-      %Create the state of the game  
-      GameState = {GameControler.createState }
       % Get List with spawn posiion
       FloorSpawn= GameState.wfloorSapwan
       %{Show 'FlooSpawn is nul: '# {FlooSpawn == nil }}
@@ -177,17 +181,82 @@ in
       {Init_Show_Bombers GameState}
 end 
 
- proc {CreateGame}
-      PortWindow = {GUI.portWindow}
-      {Send PortWindow buildWindow}
-      GameState = {InitGamestate}
-      {TurnByTurn GameState PortWindow}
+ proc {TurnByTurn}
+   GameState1 GameState
+ in
+     
+      %Create the state of the game  
+      GameState1 = {GameControler.createState}
+      GameState = {InitGamestate GameState1}
+      {LoopTurnByTurn {Adjoin GameState gameState(portWindow: PortWindow)} GameState.playersList}
  end
 
- %%%%%%%%%%%%%%%%%%%%%%% Main %%%%%%%%%%%%%%%%%%%%%%%
- %PortWindow =  {SimulationPort}
- 
-  {CreateGame}
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ % Simultaneous
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+   proc {LoopSimulataneous Bomberman PortGameState}
+         Decision in 
+         {Send PortGameState decision(Decision)}
+          {Wait Decision}
+         if Decision == true then 
+         % Loop until is abailable to make changes 
+         {LoopSimulataneous Bomberman PortGameState}       
+         else 
+            GameState in
+            % Play once and free GameState 
+            {Send PortGameState getGameState(GameState)}
+            {Wait GameState}
+            if (GameState.endGame == true) then % end of the game 
+               {Show 'Main Action to show '#GameState.actionToShow}
+               {ShowAction GameState.actionToShow}
+            else 
+               UpdateGameState in
+               {Send PortGameState play(UpdateGameState Bomberman)}
+               {Wait UpdateGameState}
+               {ShowAction UpdateGameState.actionToShow}
+               {Send PortGameState  freeGamestate()}
+               {LoopTurnByTurn Bomberman PortGameState} 
+            end
+         end    
+   end 
+
+  proc{Simultaneous}
+     Coucou PortGameState ResultGameState UpdatedGameState GameState
+  in
+    PortGameState = {GameControler.portGameState}
+   
+
+    {Send PortGameState getGameState(GameState)}
+    {Wait GameState}
+    UpdatedGameState= {InitGamestate GameState}
+    {Show 'Update Init '}
+    {Send PortGameState updateGameState(UpdatedGameState)}
+    {Show 'end'}
+
+    %%%%% To Delete Test Message Port %%%%%%
+    {Send PortGameState testMessage(Coucou)}
+    {Wait Coucou}
+    {Show 'Message test to Port GameState '#Coucou}
+    %%%%%%% End To Delete%%%%%%%%%%%%%%%%%%%
+
+
+
+  end
+
+
+  
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ % Main
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   PortWindow = {GUI.portWindow}
+   {Send PortWindow buildWindow}
+   if (Input.isTurnByTurn == true) then 
+      {TurnByTurn}
+   else 
+      {Simultaneous}
+   end
+ 
 end
 
