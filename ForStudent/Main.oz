@@ -127,7 +127,7 @@ in
       [] H|T then
          %{Show 'Drawing: '#H}
          {Send PortWindow H} 
-         {Delay 300}
+         {Delay 100}
          {ShowAction T}
       end
    end 

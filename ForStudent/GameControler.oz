@@ -62,7 +62,7 @@ define
 
   % Debug
    LocalDebug= false
-   LocalDebug2= true 
+   LocalDebug2= false
 
 in
  %%% TOOLS %%%%
@@ -103,7 +103,6 @@ in
          bombList:nil
          messageList: nil
          actionToShow:nil
-         map: Input.map
          portWindow:_
          pointBox:1
          pointBonus:10

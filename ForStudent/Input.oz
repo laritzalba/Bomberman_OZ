@@ -124,7 +124,7 @@ in
    NbRow = 7
    NbColumn = 13
 
-    Map = {CreateMap}
+    %Map = {CreateMap}
 
 
 /* Map = [[1 1 1 1 1 1 1 1 1 1 1 1 1]
@@ -143,8 +143,18 @@ in
 	  [1 0 0 0 0 0 0 0 0 0 0 0 1]
 	  [1 4 0 0 0 2 2 0 0 0 0 4 1]
 	  [1 1 1 1 1 1 1 1 1 1 1 1 1]]
-
 */
+
+% Map to test if player avoid walls and boxes properly
+Map = [[1 1 1 1 1 1 1 1 1 1 1 1 1]
+	  [1 4 0 0 1 0 2 0 0 2 0 4 1]
+	  [1 0 0 0 1 0 3 0 0 2 0 0 1]
+	  [1 1 1 1 0 0 0 0 0 2 2 2 1]
+	  [1 0 0 0 1 0 1 0 3 0 0 0 1]
+	  [1 4 0 0 1 0 1 0 3 0 0 4 1]
+	  [1 1 1 1 1 1 1 1 1 1 1 1 1]]
+   
+
    %%%%%%%%% ATTENTION %%%%%%%%%%
    
 
@@ -152,13 +162,13 @@ in
 
 %%%% Players description %%%%
 
-   NbBombers = 2
-   Bombers = [player000bomber player000bomber]
-   ColorBombers = [yellow red]
+   NbBombers = 4
+   Bombers = [player000bomber player000name player000name player000name]
+   ColorBombers = [yellow red green blue]
 
 %%%% Parameters %%%%
 
-   NbLives = 10
+   NbLives = 100
    NbBombs = 1
  
    ThinkMin = 500  % in millisecond

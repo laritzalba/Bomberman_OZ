@@ -8,6 +8,7 @@
 
 # TODO write your makefile here
 all :compile run
+test : compile test1
 
 compile :
 	@ozc -c *.oz
@@ -21,6 +22,8 @@ player :
 	@ozc -c Player000name.oz
 run :
 	@ozengine Main.ozf
+test1 :
+	@ozengine Test.ozf
 
 clean :
 	@rm -rf GUI.ozf Input.ozf Main.ozf PlayerManager.ozf GameControler.ozf
