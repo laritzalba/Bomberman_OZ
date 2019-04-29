@@ -12,21 +12,25 @@ define
    MoveRandom
    DoAction
    AddObject
+   TakeHit
+   GetInfo
    TreatStream
    Name = 'namefordebug'
 in
    fun{StartPlayer ID}
-      Stream Port OutputStream PlayerInfo
-   in
-      PlayerInfo = infos(id: ID lives:Input.nbLives bombs:Input.nbBombes score: 0 state:off currentPos:null initPos:null)
-      thread %% filter to test validity of message sent to the player
-         OutputStream = {Projet2019util.portPlayerChecker Name ID Stream}
+      local
+         Stream Port OutputStream PlayerInfo
+      in
+         PlayerInfo = infos(id: ID lives:Input.nbLives bombs:Input.nbBombes score: 0 state:off currentPos:null initPos:null)
+         thread %% filter to test validity of message sent to the player
+            OutputStream = {Projet2019util.portPlayerChecker Name ID Stream}
+         end
+         {NewPort Stream Port}
+         thread
+            {TreatStream OutputStream PlayerInfo}
+         end
+         Port
       end
-      {NewPort Stream Port}
-      thread
-	      {TreatStream OutputStream PlayerInfo}
-      end
-      Port
    end
 
    %%%%%%%%%%%%%%%%%%%Functions and procedures usefull for TreatStream
@@ -37,7 +41,7 @@ in
     *            is bound to null otherwise
     */
    proc{MakeSpawn PlayerInfo NewPlayer}
-      ifPlayerInfo.state == off && PlayerInfo.lives > 0 then
+      if PlayerInfo.state == off andthen PlayerInfo.lives > 0 then
          %TODO Make spawn. Est-ce qu'il faut faire quelque chose en plus???
          NewPlayer = infos(id: PlayerInfo.id lives:PlayerInfo.lives bombs:PlayerInfo.bombes score:PlayerInfo.score state:on currentPos:PlayerInfo.initPos initPos:PlayerInfo.initPos)
       else
@@ -50,16 +54,18 @@ in
     */
    %Ne gère pas le cas où on arrive à la fin de la liste. Cela ne devrait jamais arriver car le player est toujours arrêté par un mur avant
    fun {CheckTile Map X Y}
-      fun {Iterate Acc L}
-         case L of H|T then
-            if Acc == 1 then H
-            else
-               {Iterate Acc-1 T}
+      local
+         fun {Iterate Acc L}
+            case L of H|T then
+               if Acc == 1 then H
+               else
+                  {Iterate Acc-1 T}
+               end
             end
          end
-      end
       in
          {Iterate Y {Iterate X Map}}
+      end
    end
 
    /*
@@ -69,28 +75,32 @@ in
    %Cas limite: Tourne en boucle si un player se trouve entouré uniquement de murs (possible si map mal faite et spawn à cet endroit là)
    proc{MoveRandom PlayerInfo NewPlayer}
       local
-      NewPos Rand
-      fun{GetNewPos Pos Dir}{
-         declare TryPos
-         if Dir == 0 then
-            TryPos = pos(x:PlayerInfo.currentPos.x+1 y=PlayerInfo.currentPos.y)
-         elseif Dir == 1 then
-            TryPos = pos(x:PlayerInfo.currentPos.x y=PlayerInfo.currentPos.y+1)
-         elseif Dir == 2 then
-            TryPos = pos(x:PlayerInfo.currentPos.x-1 y=PlayerInfo.currentPos.y)
-         elseif Dir == 1 then
-            TryPos = pos(x:PlayerInfo.currentPos.x y=PlayerInfo.currentPos.y-1)
+         NewPos Rand
+         fun{GetNewPos Pos Dir}
+            local
+               TryPos
+            in
+               if Dir == 0 then
+                  TryPos = pos(x:PlayerInfo.currentPos.x+1 y=PlayerInfo.currentPos.y)
+               elseif Dir == 1 then
+                  TryPos = pos(x:PlayerInfo.currentPos.x y=PlayerInfo.currentPos.y+1)
+               elseif Dir == 2 then
+                  TryPos = pos(x:PlayerInfo.currentPos.x-1 y=PlayerInfo.currentPos.y)
+               elseif Dir == 3 then
+                  TryPos = pos(x:PlayerInfo.currentPos.x y=PlayerInfo.currentPos.y-1)
+               end
+               if({CheckTile Input.map TryPos.x TryPos.y} == 1) then %The wanted direction is a wall, need to change direction
+                  {GetNewPos Pos ((Dir+1) mod 4)}
+               else %It is possible to go in the wanted direction
+                  TryPos
+               end
+            end
          end
-         if({CheckTile Input.map TryPos.x TryPos.y} == 1) then %The wanted direction is a wall, need to change direction
-            {TryStep Pos ((Dir+1) mod 4)}
-         else %It is possible to go in the wanted direction
-            TryPos
-         end
-      }
       in
          Rand = {os.rand} mod 4
          NewPos = {GetNewPos PlayerInfo.currentPos Rand}
          NewPlayer = infos(id: PlayerInfo.id lives:PlayerInfo.lives bombs:PlayerInfo.bombes score:PlayerInfo.score state:PlayerInfo.state currentPos:NewPos initPos:PlayerInfo.initPos)
+      end
    end
 
    /*
@@ -132,7 +142,7 @@ in
       if Type == bomb then
          NewPlayer = infos(id: PlayerInfo.id lives:PlayerInfo.lives bombs:(PlayerInfo.bombes+1) score:PlayerInfo.score state:PlayerInfo.state currentPos:PlayerInfo.currentPos initPos:PlayerInfo.initPos)
          Result = NewPlayer.bombes
-      else if Type == point then
+      elseif Type == point then
          NewPlayer = infos(id: PlayerInfo.id lives:PlayerInfo.lives bombs:PlayerInfo.bombes score:(PlayerInfo.score+Option) state:PlayerInfo.state currentPos:PlayerInfo.currentPos initPos:PlayerInfo.initPos)
          Result = NewPlayer.score
       else skip %This option is supported
@@ -151,52 +161,97 @@ in
          NewPlayer = infos(id: PlayerInfo.id lives:(PlayerInfo.lives-1) bombs:PlayerInfo.bombes score:PlayerInfo.score state:off currentPos:PlayerInfo.currentPos initPos:PlayerInfo.initPos)
       end
    end
+
+   proc {GetInfo M PlayerInfo}
+      case M of spawnPlayer(ID Pos) then
+         if ID == PlayerInfo.id then skip %Info about itself, can ignore
+         else
+            skip %TODOOOOOOOOOOOO SaveInfo
+         end
+      []movePlayer(ID Pos) then
+         if ID == PlayerInfo.id then skip %Info about itself, can ignore
+         else
+            skip %TODOOOOOOOOOOOO SaveInfo
+         end
+      []deadPlayer(ID) then
+         if ID == PlayerInfo.id then skip %Info about itself, can ignore
+         else
+            skip %TODOOOOOOOOOOOO SaveInfo
+         end
+      []bombPlanted(Pos) then
+         skip %TODOOOOOOOOOOOO
+      []bombExploded(Pos) then
+         skip %TODOOOOOOOOOOOO
+      []boxRemoved(Pos) then
+         skip %TODOOOOOOOOOOOO
+      end
+   end
    
    %%%%%%%%%%%%%%%%Treatmen and handling of received messages
 
    proc{TreatStream Stream PlayerInfo} %% TODO you may add some arguments if needed
      case Stream of nil then skip
      []Head|Tail then
-      case Head of getId(BomberID) then
-         BomberID = PlayerInfo.id
-         {TreatStream Tail PlayerInfo}
-      []getState(BomberID BomberState) then
-         BomberID = PlayerInfo.id
-         BomberState = PlayerInfo.state
-         {TreatStream Tail PlayerInfo}
-      []assignSpawn(Pos) then
-         NewInfo = infos(id: PlayerInfo.id lives:PlayerInfo.lives bombs:PlayerInfo.bombes score: PlayerInfo.score state:PlayerInfo.state currentPos:PlayerInfo.currentPos initPos:Pos)
-         {TreatStream Tail PlayerInfo} %TODO Est-ce que cette position a été vérifiée comme possible?
-      []spawn(BomberID BomberPos) then
-         declare NewPlayer
-         {MakeSpawn PlayerInfo NewPlayer}
-         ifNewPlayer != null then %Bomber could spawn
+         case Head of getId(BomberID) then
             BomberID = PlayerInfo.id
-            BomberPos = PlayerInfo.currentPos
-         else %Bomber could not spawn
-            BomberID = null
-            BomberPos = null
+            {TreatStream Tail PlayerInfo}
+         []getState(BomberID BomberState) then
+            BomberID = PlayerInfo.id
+            BomberState = PlayerInfo.state
+            {TreatStream Tail PlayerInfo}
+         []assignSpawn(Pos) then
+            local
+               NewPlayer
+            in
+               NewPlayer = infos(id: PlayerInfo.id lives:PlayerInfo.lives bombs:PlayerInfo.bombes score: PlayerInfo.score state:PlayerInfo.state currentPos:PlayerInfo.currentPos initPos:Pos)
+               {TreatStream Tail NewPlayer} %TODO Est-ce que cette position a été vérifiée comme possible?
+            end
+         []spawn(BomberID BomberPos) then
+            local
+               NewPlayer
+            in
+               {MakeSpawn PlayerInfo NewPlayer}
+               if NewPlayer \= null then %Bomber could spawn
+                  BomberID = PlayerInfo.id
+                  BomberPos = PlayerInfo.currentPos
+               else %Bomber could not spawn
+                  BomberID = null
+                  BomberPos = null
+               end
+               {TreatStream Tail NewPlayer}
+            end
+         []doaction(BomberID BomberAction) then
+            local
+               NewPlayer
+            in
+               {DoAction PlayerInfo BomberAction NewPlayer}
+               if BomberAction == null then %The player is of the board and no action could be done
+                  BomberID = null
+               else
+                  BomberID = NewPlayer.id
+               end
+               {TreatStream Tail NewPlayer}
+            end
+         []add(Type Option BomberResult) then
+            local
+               NewPlayer
+            in
+               {AddObject Type Option PlayerInfo NewPlayer BomberResult}
+               {TreatStream Tail NewPlayer}
+            end
+         []gotHit(BomberID BomberResult) then
+            local
+               NewPlayer
+            in
+               {TakeHit PlayerInfo NewPlayer}
+               BomberID = NewPlayer.id
+               BomberResult = death(NewPlayer.lives)
+               {TreatStream Tail NewPlayer}
+            end
+         []info(M) then
+            skip %Basic player only act randomly without taking other informations into account
+            {TreatStream Tail PlayerInfo}
          end
-         {TreatStream Tail NewPlayer}
-      []doaction(BomberID BomberAction) then
-         declare NewPlayer
-         {DoAction PlayerInfo BomberAction NewPlayer}
-         if BomberAction == null then %The player is of the board and no action could be done
-            BomberID = null
-         else
-            BomberID = NewPlayer.id
-         {TreatStream Tail NewPlayer}
-      []add(Type Option BomberResult) then
-         declare NewPlayer
-         {AddObject Type Option PlayerInfo NewPlayer BomberResult}
-         {TreatStream Tail NewPlayer}
-      []gotHit(BomberID BomberResult) then
-         declare NewPlayer
-         {TakeHit PlayerInfo NewPlayer}
-         BomberResult = death(NewPlayer.lives)
-         {TreatStream Tail NewPlayer}
-      []info(M) then
-         %TODOOOO Create a function for that
       end
    end
 
@@ -209,5 +264,4 @@ in
 		end
 	end*/
    
-
-end
+end %End Module
