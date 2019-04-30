@@ -29,22 +29,24 @@ define
    BOX_POINT = 2
    BOX_BONUS = 3
    FLOOR_SPAWN = 4
-   OTHER_BOMB = 100 %
-   MY_BOMB = 1000
+   OTHER_BOMB = 1000 %
+   MY_BOMB = 100
    %The values can be added. The different type informations are held in different power of 10 to be able to retrieve the information with the operation 'mod'
+   %NbRow = Input.NbRow
+   %NbColumn = Input.NbColumn
 
    % Debug
    Show Show2
    LocalDebug= true
-   LocalDebug2= false
+   LocalDebug2= true
 in
 %%% TOOLS %%%%
-  proc {Show Msg}
+  proc {Show Msg} %Used for info messages (in this file)
     if (LocalDebug == true) then {System.show Msg}
     else skip end 
   end
 
-   proc {Show2 Msg}
+   proc {Show2 Msg} %Used for error messages (in this file)
     if (LocalDebug2 == true) then {System.show Msg}
     else skip end 
   end
@@ -104,37 +106,12 @@ in
     * Return the value corresponding to the type of tile in position X Y (1,2,3 or 4)
     */
     fun {CheckTile Map X Y}
-      {Nth {Nth Map Y} X}
-    end
-   %Si on arrive en fin de liste, simule un mur. Cela ne devrait jamais arriver car le player est toujours arrêté par un mur avant
-   /*fun {CheckTile Map X Y}
-      local
-         local
-            fun {IterateColumns Acc L}
-               case L of H|T then
-                  if Acc == 1 then H
-                  else {IterateColumns Acc-1 T}
-                  end
-               [] nil then 1 %went too far, shouldn't happen
-               end
-            end
-         in
-            fun {IterateLines Acc L}
-               case L of H|T then %Head followed by a list
-                  if Acc == 1 then {IterateColumns Y H}
-                  else
-                     {IterateLines Acc-1 T}
-                  end
-               [] [H] then %Last line possible
-                  {IterateColumns Y [H]}
-               end
-            end
-         end
-      in
-         {IterateLines X Map}
-         %{Iterate Y {Iterate X Map}}
+      if X == 0 orelse Y == 0 orelse X == Input.nbRow orelse Y == Input.nbColumn then %This is a wall
+         1
+      else
+         {Nth {Nth Map Y} X}
       end
-   end*/
+    end
 
    /*
     * Take a player in argument and return a player that has moved in a rondaom direction, avoiding walls
@@ -142,11 +119,11 @@ in
     */
    %Cas limite: Tourne en boucle si un player se trouve entouré uniquement de murs (possible si map mal faite et spawn à cet endroit là)
    proc{MoveRandom PlayerInfo NewPlayer}
-   {Show 'MoveRandom'}
+   {Show2 'MoveRandom'}
       local
          NewPos Rand
          fun{GetNewPos Pos Dir}
-            {Show 'GetNewPos in direction'#Dir}
+            {Show2 'GetNewPos in direction'#Dir}
             local
                TryPos
             in
@@ -161,12 +138,12 @@ in
                end
                local TileType in
                   TileType = {CheckTile PlayerInfo.map TryPos.x TryPos.y}
-                  {Show 'TileType is '#TileType}
-                  if TileType == FLOOR orelse TileType == BOX_BONUS orelse TileType == BOX_POINT then %The wanted direction is a wall or there is a box, need to change direction
-                     {Show 'Find other Pos'#Pos#'in direction'#((Dir+1) mod 4)}
+                  {Show 'GetNewPos - TileType is '#TileType}
+                  if TileType == WALL orelse TileType == BOX_BONUS orelse TileType == BOX_POINT then %The wanted direction is a wall or there is a box, need to change direction
+                     {Show 'GetNewPos - Find other Pos'#Pos#'in direction'#((Dir+1) mod 4)}
                      {GetNewPos Pos ((Dir+1) mod 4)}
                   else %It is possible to go in the wanted direction
-                     {Show 'NewPosition is'#TryPos}
+                     {Show 'GetNewPos - NewPosition is'#TryPos}
                      TryPos
                   end
                end
@@ -189,8 +166,7 @@ in
     *          is bound to move(pos) where pos is the new player position
     */
    proc{DoAction PlayerInfo Action NewPlayer}
-         Rand
-         NewMap
+         Rand NewMap
       in
          Rand = ({OS.rand} mod 10)
          if PlayerInfo.state == off then
@@ -198,20 +174,20 @@ in
             NewPlayer = PlayerInfo
          else
             if Rand == 0 then % chance of 0.1 to drop a bomb if possible
-               if PlayerInfo.bombs > 0 andthen ({CheckTile PlayerInfo.map PlayerInfo.pos.x PlayerInfo.pos.y} mod MY_BOMB) == 0 then %There are still bomb left and none of my bombs on the tile
+               if PlayerInfo.bombs > 0 andthen ({CheckTile PlayerInfo.map PlayerInfo.currentPos.x PlayerInfo.currentPos.y} mod MY_BOMB) == 0 then %There are still bomb left and none of my bombs on the tile
                   Action = bomb(PlayerInfo.currentPos)
-                  NewMap = {UpdateMap PlayerInfo.map PlayerInfo.pos.x PlayerInfo.pos.y MY_BOMB}
+                  NewMap = {UpdateMap PlayerInfo.map PlayerInfo.currentPos.x PlayerInfo.currentPos.y MY_BOMB}
                   NewPlayer = infos(id: PlayerInfo.id lives:PlayerInfo.lives bombs:(PlayerInfo.bombs-1) score:PlayerInfo.score state:PlayerInfo.state currentPos:PlayerInfo.currentPos initPos:PlayerInfo.initPos map:NewMap rivals:PlayerInfo.rivals)
-                  {Show 'Action has bombed'}
+                  {Show 'DoAction - Bombed'}
                else
                   {MoveRandom PlayerInfo NewPlayer}
                   Action = move(NewPlayer.currentPos)
-                  {Show 'Action has moved'}
+                  {Show 'DoAction - Moved'}
                end
             else % chance of 0.9 to move
                {MoveRandom PlayerInfo NewPlayer}
                Action = move(NewPlayer.currentPos)
-               {Show 'Action has moved'}
+               {Show2 'DoAction - Moved'}
             end
          end
    end
@@ -256,6 +232,8 @@ in
       [] rival(id:ID state:State pos:Pos)|T then
          if ID == RivalID then
             rival(id:ID state:State pos:Pos)
+         else
+            {GetRivalByID T RivalID}
          end
       end
    end
@@ -291,67 +269,89 @@ in
     * @NewPlayer: Bound to new state of player informations
     * Handled messages: spawnPlayer, movePlayer, deadPlayer, bombPlanted, bombPlanted, bombExploded, boxRemoved
     */
-   proc {ManageInfo M PlayerInfo NewPlayer}
-      {Show 'Player'#PlayerInfo.id#'has received message'#M}
-      {Show2 'Player infos'#PlayerInfo}
+   fun {ManageInfo M PlayerInfo}
+      %{Show 'ManageInfo'#PlayerInfo.id.id#'has received message'#M}
+      %{Show 'ManageInfo - Player infos'#PlayerInfo}
       case M of spawnPlayer(ID Pos) then
-         if ID == PlayerInfo.id then skip %Info about itself, can ignore
+         {Show 'ManageInfo'#PlayerInfo.id.id#' Spawn player'#ID#'in pos'#Pos}
+         if ID == PlayerInfo.id then %Info about itself return same state
+            PlayerInfo
          else
                CurrentVal = {CheckTile PlayerInfo.map Pos.x Pos.y}
-               NewPlayer NewMap
+               NewPlayer NewMap NewRivalState
             in
                NewMap = {UpdateMap PlayerInfo.map Pos.x Pos.y CurrentVal+10}
-               NewPlayer = infos(id:PlayerInfo.id lives:PlayerInfo.lives bombs:PlayerInfo.bombs score:PlayerInfo.score state:PlayerInfo.state currentPos:PlayerInfo.currentPos initPos:PlayerInfo.initPos map:NewMap rivals:rival(id:ID state:on pos:Pos)|PlayerInfo.rivals)
+               NewRivalState = rival(id:ID state:on pos:Pos)|PlayerInfo.rivals
+               NewPlayer = infos(id:PlayerInfo.id lives:PlayerInfo.lives bombs:PlayerInfo.bombs score:PlayerInfo.score state:PlayerInfo.state currentPos:PlayerInfo.currentPos initPos:PlayerInfo.initPos map:NewMap rivals:NewRivalState)
+               NewPlayer
          end
       []movePlayer(ID Pos) then
-         if ID == PlayerInfo.id then skip %Info about itself, can ignore
+         {Show 'ManageInfo'#PlayerInfo.id.id#' Move player'#ID.id#'in pos'#Pos}
+         if ID == PlayerInfo.id then %Info about itself return same state
+            PlayerInfo
          else
                Rival NewRivalState TemporaryMap NewMap NewPlayer
             in 
                Rival = {GetRivalByID PlayerInfo.rivals ID}
-               TemporaryMap = {RemovePlayer PlayerInfo.map Rival.pos.x Rival.pos.y} % Remove rival ID from old position
-               NewRivalState = rival(id:ID state:on pos:Pos)
+               if Rival == null orelse Rival.pos == null then %Problem, rival was not register on our list, shouldn't happen
+                  {Show2 'Error'#PlayerInfo.id.id#' in movePlayer: Result of GetRivalByID for playre'#ID#'is'#Rival}
+                  TemporaryMap = PlayerInfo.map
+               else %Rival was on list and it is remove from old position
+                  TemporaryMap = {RemovePlayer PlayerInfo.map Rival.pos.x Rival.pos.y}
+               end
+               NewRivalState = rival(id:ID state:on pos:Pos)|PlayerInfo.rivals
                NewMap = {AddPlayer TemporaryMap Pos.x Pos.y}%Add rival to new position
-               NewPlayer = infos(id:PlayerInfo.id lives:PlayerInfo.lives bombs:PlayerInfo.bombs score:PlayerInfo.score state:PlayerInfo.state currentPos:PlayerInfo.currentPos initPos:PlayerInfo.initPos map:NewMap rivals:NewRivalState|PlayerInfo.rivals) %Map is updated, NewRival is added to the list of rivals
+               NewPlayer = infos(id:PlayerInfo.id lives:PlayerInfo.lives bombs:PlayerInfo.bombs score:PlayerInfo.score state:PlayerInfo.state currentPos:PlayerInfo.currentPos initPos:PlayerInfo.initPos map:NewMap rivals:NewRivalState)
+               {Show 'ManageInfo'#PlayerInfo.id.id#' MovePlayer - NewRivalSate is'#NewRivalState}
+               NewPlayer
          end
       []deadPlayer(ID) then
-         if ID == PlayerInfo.id then skip %Info about itself, can ignore
+         if ID == PlayerInfo.id then %Info about itself return same state
+            PlayerInfo
          else
                Rival NewRivalState NewMap NewPlayer
-            in 
+            in
                Rival = {GetRivalByID PlayerInfo.rivals ID}
-               NewMap = {RemovePlayer PlayerInfo.map Rival.pos.x Rival.pos.y} % Remove rival ID from old position
-               NewRivalState = rival(id:ID state:off pos:null) %update of rival state
-               NewPlayer = infos(id:PlayerInfo.id lives:PlayerInfo.lives bombs:PlayerInfo.bombs score:PlayerInfo.score state:PlayerInfo.state currentPos:PlayerInfo.currentPos initPos:PlayerInfo.initPos map:NewMap rivals:NewRivalState|PlayerInfo.rivals) %Map is updated, NewRival is added to the list of rivals
+               if Rival == null orelse Rival.pos == null then %Problem, rival was not register on our list or was marked off board, shouldn't happen
+                  {Show2 'Error: Rival'#ID#'has died and was not on our rival list or was considered of the board'}
+                  NewMap = PlayerInfo.map
+               else
+                  NewMap = {RemovePlayer PlayerInfo.map Rival.pos.x Rival.pos.y} % Remove rival ID from old position
+               end
+               NewRivalState = rival(id:ID state:off pos:null)|PlayerInfo.rivals %update of rival state
+               NewPlayer = infos(id:PlayerInfo.id lives:PlayerInfo.lives bombs:PlayerInfo.bombs score:PlayerInfo.score state:PlayerInfo.state currentPos:PlayerInfo.currentPos initPos:PlayerInfo.initPos map:NewMap rivals:NewRivalState)
+               NewPlayer
          end
-      %[]bombPlanted(Pos) then
+      []bombPlanted(Pos) then
+         {Show2 'Message bombPlanted has been used'}
+         PlayerInfo
       []spawnBomb(Pos) then
             CurrentVal = {CheckTile PlayerInfo.map Pos.x Pos.y}
             NewMap NewPlayer
          in
             NewMap = {UpdateMap PlayerInfo.map Pos.x Pos.y CurrentVal + OTHER_BOMB}
             NewPlayer = infos(id:PlayerInfo.id lives:PlayerInfo.lives bombs:PlayerInfo.bombs score:PlayerInfo.score state:PlayerInfo.state currentPos:PlayerInfo.currentPos initPos:PlayerInfo.initPos map:NewMap rivals:PlayerInfo.rivals)
+            NewPlayer
       []bombExploded(Pos) then
             CurrentVal = {CheckTile PlayerInfo.map Pos.x Pos.y}
             NewMap NewPlayer
          in 
-            if(CurrentVal mod OTHER_BOMB) =< 10 then %There was only Other bombs on the tile
+            if(CurrentVal mod OTHER_BOMB) < 10 then %There was only my bombs on the tile
+               NewMap = {UpdateMap PlayerInfo.map Pos.x Pos.y CurrentVal - MY_BOMB}
+            else %There is at least another bomb than mine on the tile. Assume it was someone else's that exploded (safer to resoect rules of the game)
                NewMap = {UpdateMap PlayerInfo.map Pos.x Pos.y CurrentVal - OTHER_BOMB}
-            else 
-               if ((CurrentVal mod OTHER_BOMB)-(MY_BOMB mod OTHER_BOMB)) == 0 then %There was only my bombs on the tile
-                   NewMap = {UpdateMap PlayerInfo.map Pos.x Pos.y CurrentVal - MY_BOMB}
-               else %There was both my bombs and other bombs on the tile. Assume it was someone else's (safer to resoect rules of the game)
-                  NewMap = {UpdateMap PlayerInfo.map Pos.x Pos.y CurrentVal - OTHER_BOMB}
-               end
             end
             NewPlayer = infos(id:PlayerInfo.id lives:PlayerInfo.lives bombs:PlayerInfo.bombs score:PlayerInfo.score state:PlayerInfo.state currentPos:PlayerInfo.currentPos initPos:PlayerInfo.initPos map:NewMap rivals:PlayerInfo.rivals)
+            NewPlayer
       []boxRemoved(Pos) then
             NewMap NewPlayer
          in 
             NewMap = {UpdateMap PlayerInfo.map Pos.x Pos.y 0} %Assume that if there was a box the tile is just floor (Good for basic player, but not for more advanced ones)
             NewPlayer = infos(id:PlayerInfo.id lives:PlayerInfo.lives bombs:PlayerInfo.bombs score:PlayerInfo.score state:PlayerInfo.state currentPos:PlayerInfo.currentPos initPos:PlayerInfo.initPos map:NewMap rivals:PlayerInfo.rivals)
-      else
-         skip %Message not handled
+            NewPlayer
+      else %Message not handled, return same state to continue game
+         {Show2 'Reception of a message that could not be handled'}
+         PlayerInfo
       end
    end
    
@@ -393,7 +393,7 @@ in
             local
                NewPlayer
             in
-               {Show 'Asked to do action'}
+               {Show 'TreatStream - Asked to do action'}
                {DoAction PlayerInfo BomberAction NewPlayer}
                if BomberAction == null then %The player is off the board and no action could be done
                   BomberID = null
@@ -421,7 +421,7 @@ in
          []info(M) then
                NewPlayer
             in
-               {ManageInfo M PlayerInfo NewPlayer}
+               NewPlayer = {ManageInfo M PlayerInfo}
                {TreatStream Tail NewPlayer}
          end
       end
