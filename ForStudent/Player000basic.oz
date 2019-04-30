@@ -106,7 +106,8 @@ in
     * Return the value corresponding to the type of tile in position X Y (1,2,3 or 4)
     */
     fun {CheckTile Map X Y}
-      if X == 0 orelse Y == 0 orelse X == Input.nbRow orelse Y == Input.nbColumn then %This is a wall
+      if X == 1 orelse Y == 1 orelse X == Input.nbColumn orelse Y == Input.nbRow then %Right line
+      %if X == 1 orelse Y == 1 orelse X == Input.nbRow orelse Y == Input.nbColumn then %Wrong line
          1
       else
          {Nth {Nth Map Y} X}
@@ -168,7 +169,7 @@ in
    proc{DoAction PlayerInfo Action NewPlayer}
          Rand NewMap
       in
-         Rand = ({OS.rand} mod 10)
+         Rand = ({OS.rand} mod 1)%%%%%%%%%%TODOOOOOOOOOOOOOO remettre à 10
          if PlayerInfo.state == off then
             Action = null
             NewPlayer = PlayerInfo

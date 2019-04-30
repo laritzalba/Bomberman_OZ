@@ -22,8 +22,6 @@ player :
 	@ozc -c Player000name.oz
 run :
 	@ozengine Main.ozf
-test1 :
-	@ozengine Test.ozf
 
 clean :
-	@rm -rf GUI.ozf Input.ozf Main.ozf PlayerManager.ozf GameControler.ozf
+	@rm -rf GUI.ozf Input.ozf Main.ozf PlayerManager.ozf GameControler.ozf Player000basic.ozf
