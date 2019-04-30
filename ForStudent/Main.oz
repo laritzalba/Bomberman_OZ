@@ -12,6 +12,8 @@ export
 define
   GameStateInit
   Show
+  Show2
+  Show3
   PortWindow
   NbSpawPosition
   RandomListSpawPosition
@@ -23,6 +25,9 @@ define
   %Helper game
    ShuffleListNumber
    DropNthOfList
+   LocalDebug= false
+   LocalDebug2= false
+    LocalDebug3= true
 
 
   %Init game
@@ -44,8 +49,19 @@ in
 
   %%% TOOLS %%%%
    proc {Show Msg}
-		{System.show Msg}
-   end
+    if (LocalDebug == true) then {System.show Msg}
+    else skip end 
+  end
+
+    proc {Show2 Msg}
+    if (LocalDebug2 == true) then {System.show Msg}
+    else skip end 
+  end
+
+   proc {Show3 Msg}
+    if (LocalDebug3 == true) then {System.show Msg}
+    else skip end 
+  end
  %%% END TOOLS %%%%
 
 %%%%%%%%%%%%%%%%%%%%%%% Init Helper Functions %%%%%%%%%%%%%%%%%%%%%%%
@@ -135,7 +151,8 @@ in
       case ActionList
       of nil then skip 
       [] H|T then
-         %{Show 'Drawing: '#H}
+         {Show3 'Drawing: '#H}
+         {Delay 100}
          {Send PortWindow H} 
          {ShowAction T}
       end
@@ -152,6 +169,7 @@ in
          []ExtendedBombers|T then 
             UpdateGameState in
             UpdateGameState = {GameControler.play GameState ExtendedBombers}
+               {Show3   'pdateGameState.actionToShow'# UpdateGameState.actionToShow }
                {ShowAction UpdateGameState.actionToShow}
                {LoopTurnByTurn UpdateGameState T} 
          end
@@ -195,7 +213,7 @@ end
  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-   proc {LoopSimulataneous Bomberman PortGameState ThreadID}
+  /* proc {LoopSimulataneous Bomberman PortGameState ThreadID}
          Decision in 
          {Delay ({OS.rand} mod (Input.thinkMax-Input.thinkMin))+Input.thinkMin}
          {Send PortGameState decision(Decision)}
@@ -235,6 +253,48 @@ end
             end
          end    
    end 
+*/
+
+ proc {LoopSimulataneous Bomberman PortGameState ThreadID}
+         Decision in 
+         {Delay ({OS.rand} mod (Input.thinkMax-Input.thinkMin))+Input.thinkMin}
+         {Send PortGameState decision(Decision)}
+         {Wait Decision}
+         if (Decision == false) then 
+             % Loop until is abailable to make changes 
+             {Show 'ThreadID: '# ThreadID #'Decision is '#Decision}
+             {LoopSimulataneous Bomberman PortGameState ThreadID}       
+         else 
+            GameState Coucou in
+            {Show 'ThreadID: '# ThreadID #'Decision is acepted'#Decision}
+            % Play once and free GameState    
+
+            {Send PortGameState getGameState(GameState)}
+            {Wait GameState}
+             {Show 'ThreadID: '# ThreadID #'Gamestate to paly '#GameState.actionToShow}
+
+    %%%%% To Delete Test Message Port %%%%%%
+    {Send PortGameState testMessage(Coucou)}
+    {Wait Coucou}
+    {Show 'Message test to Port GameState Coucoou2 '#Coucou}
+    %%%%%%% End To Delete%%%%%%%%%%%%%%%%%%%
+
+           if (GameState.endGame == true) then % end of the game 
+               {Show 'ThreadID: '# ThreadID #'Main Action to show 3 '} %#GameState.actionToShow}
+               {ShowAction GameState.actionToShow}
+            else 
+               UpdateGameState in
+               {Show 'ThreadID: '# ThreadID #'Playing 4'}
+               {Send PortGameState play(UpdateGameState Bomberman)}
+               {Wait UpdateGameState}
+                 {Show 'ThreadID: '# ThreadID #'Playing 5'}
+               {ShowAction UpdateGameState.actionToShow}
+               {Send PortGameState freeGameState()}
+               {Show 'ThreadID: '# ThreadID #'Gamestate is free '}
+               {LoopSimulataneous Bomberman PortGameState ThreadID} 
+            end
+         end    
+   end
 
 
    proc{CreateThread PlayersList PortGameState Count}
@@ -267,6 +327,7 @@ end
     {Show 'Message test to Port GameState '#Coucou}
     %%%%%%% End To Delete%%%%%%%%%%%%%%%%%%%
 end
+
 
 
   

@@ -38,9 +38,9 @@ in
 
 %%%% Style of game %%%%
    
-   IsTurnByTurn = false
+   IsTurnByTurn = true
    UseExtention = false
-   PrintOK = true
+   PrintOK = false
 
 
 %%%% Description of the map %%%%
@@ -159,7 +159,7 @@ in
 %%%% Parameters %%%%
 
    NbLives = 10
-   NbBombs = 1
+   NbBombs = 10
  
    ThinkMin = 500  % in millisecond
    ThinkMax = 2000 % in millisecond

@@ -15,8 +15,10 @@ export
    countMapBoxes:CountMapBoxes
    portGameState: AccesToGameState
 define
-   Show
+  /* Show
    Show2
+   Show3
+    Show4
    UpdateGamestate
    CreateState
    InitBomb
@@ -57,17 +59,24 @@ define
    GotAWinner
    AddWinnerMessage 
    Find
+   CheckTimesUp
+   DecreaseTimeBombing
     % Simultaneous
     CreateBombSimultaneos
+   */
     AccesToGameState
     TreatStream
-     TreatStream2
+     
+     
 
   % Debug
-   LocalDebug= false
-   LocalDebug2= true 
+   LocalDebug= false 
+   LocalDebug2= false  
+   LocalDebug3= false
+   LocalDebug4= false
+   LocalDebug5= true 
 
-in
+
  %%% TOOLS %%%%
   proc {Show Msg}
     if (LocalDebug == true) then {System.show Msg}
@@ -76,6 +85,21 @@ in
 
    proc {Show2 Msg}
     if (LocalDebug2 == true) then {System.show Msg}
+    else skip end 
+  end
+
+    proc {Show3 Msg}
+    if (LocalDebug3 == true) then {System.show Msg}
+    else skip end 
+  end
+
+   proc {Show4 Msg}
+    if (LocalDebug4 == true) then {System.show Msg}
+    else skip end 
+  end
+
+  proc {Show5 Msg}
+    if (LocalDebug5 == true) then {System.show Msg}
     else skip end 
   end
  %%% END TOOLS %%%%
@@ -130,12 +154,14 @@ in
                                             currentPosition:_ 
                                             score:0
                                             isOnBoard:true
+                                            localID: Count
                                             )
             ExtendedBomber|{CreatePortBomberAndExtend T Count+1}
           end
       end
    end
    
+
  fun{RandName Count}
    'bomberman'#Count
  end 
@@ -201,11 +227,11 @@ in
    end 
 
    fun{CreateBomb Position ExtendedBomber}
-     bomb(extendedBomber:ExtendedBomber bombpos:Position timingBomb:Input.timingBomb)
-   end
-
-    fun{CreateBombSimultaneos Position ExtendedBomber}
-      bomb(extendedBomber:ExtendedBomber bombpos:Position timingBomb:({OS.rand} mod (Input.timingBombMax-Input.timingBombMin))+Input.timingBombMin )
+        if (Input.isTurnByTurn) then 
+            bomb(extendedBomber:ExtendedBomber bombpos:Position timingBomb:Input.timingBomb)
+        else 
+            bomb(extendedBomber:ExtendedBomber bombpos:Position timingBomb:{Alarm Input.timingBombMin+({OS.rand} mod (Input.timingBombMax-Input.timingBombMin))} )
+        end 
     end
    
 
@@ -432,14 +458,65 @@ fun{ExploseListPoints GameState ListPointToExplose Bomb}
     end
 
 
-    fun{UpdateBomb GameState}
+     fun{DecreaseTimeBombing TimingBomb}
+        if (Input.isTurnByTurn) then 
+           TimingBomb -1 
+        else 
+           TimingBomb
+        end
+     end 
+
+     fun{CheckTimesUp TimingBomb}
+        NewtimingBomb 
+     in
+        if (Input.isTurnByTurn) then
+          if (TimingBomb == 0 ) then true 
+          else  false  end           
+        else % is Simultaneous 
+          if (TimingBomb == unit) then true 
+          else  false  end      
+        end
+     end 
+
+
+
+   /* fun{UpdateBomb GameState}
+        fun {Helper_UpdateBomb GameState ListBomb UpdatedListBomb}
+            case ListBomb
+            of nil then rec(lb:UpdatedListBomb gs:GameState)
+            [] Bomb|T then  NewtimingBomb in 
+                NewtimingBomb = {DecreaseTimeBombing Bomb.timingBomb}
+                {Show5 'Bomb Timing' # NewtimingBomb # Bomb.extendedBomber}  
+                if {CheckTimesUp NewtimingBomb}  then  % explode                   
+                    {Helper_UpdateBomb {KaBoom Bomb GameState} T {List.subtract UpdatedListBomb Bomb}} 
+                else 
+                    if (Input.isTurnByTurn) then   
+                        %  continue to check bombTimer in turn by turn 
+                        {Helper_UpdateBomb GameState T {Append UpdatedListBomb [{Adjoin Bomb bomb(timingBomb:NewtimingBomb)}]}}
+                    else 
+                        %  continue to check bombTimer in simultaneous
+                        {Helper_UpdateBomb GameState T UpdatedListBomb}
+                    end
+                end
+            end      
+        end
+    in % if there are not bombs I dont need to update state because nothing happend 
+        if GameState.bombList == nil then GameState
+        else Rec in 
+            Rec= {Helper_UpdateBomb GameState GameState.bombList nil}
+            {Adjoin Rec.gs gameState(bombList:Rec.lb)} 
+        end       
+    end
+    */
+     fun{UpdateBomb GameState}
         fun {Helper_UpdateBomb GameState ListBomb UpdatedListBomb}
             case ListBomb
             of nil then rec(lb:UpdatedListBomb gs:GameState)
             [] Bomb|T then  NewtimingBomb in 
                 NewtimingBomb = Bomb.timingBomb -1 
-                {Show2 'Bomb Timing' # NewtimingBomb # Bomb.extendedBomber}  
-                if NewtimingBomb == 0 then  % explode                      
+                {Show5 'Bomb Timing ' # NewtimingBomb # Bomb.bombpos}  
+                if NewtimingBomb == 0 then  % explode 
+                     {Show5 'Go to explose ************\n'#GameState.bombList}                      
                     {Helper_UpdateBomb {KaBoom Bomb GameState} T {List.subtract UpdatedListBomb Bomb}} 
                 else  
                     %  continue to check bombTimer
@@ -455,94 +532,117 @@ fun{ExploseListPoints GameState ListPointToExplose Bomb}
             {Adjoin Rec.gs gameState(bombList:Rec.lb)} 
         end       
     end
+
+ 
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  % Update Gamestate
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+   % updateBomberManState(ExtendedBomber UpdateExtenderBombers)
+    fun{UpdateBomberManState GameState ExtendedBomber UpdateExtenderBomber}    
+      {Adjoin GameState gameState(playersList:{Replace GameState.playersList ExtendedBomber UpdateExtenderBomber})}
+    end 
+
+      % hidePoint(Pos)
+    fun{HidePoint GameState Pos}
+      {Adjoin GameState gameState(unveiledPoint: {List.subtract GameState.unveiledPoint Pos})}
+    end 
+
+     % hideBonus(Pos)
+    fun{HideBonus GameState Pos}
+      {Adjoin GameState gameState(unveiledBonus: {List.subtract GameState.unveiledBonus Pos})}
+    end 
+
+    %bombPlanted(Pos ExtendedBomber)
+    fun{BombPlanted GameState Pos ExtendedBomber}
+     {Show5 'Adding bomb to list ' # Pos }
+     {Adjoin GameState gameState(bombList: {Append GameState.bombList [{CreateBomb Pos ExtendedBomber}]})}
+    end 
     
+    %  movePlayer(ID Pos)
+   fun {MovePlayer GameState Pos ExtendedBomber}
+      UpdateExtenderBomber  
+   in 
+      UpdateExtenderBomber = {Adjoin ExtendedBomber extendedBomber(currentPosition:Pos)}
+      {Adjoin GameState gameState(playersList:{Replace GameState.playersList ExtendedBomber UpdateExtenderBomber})}
+   end 
+
+   % add(Type Option ?Result)
+    fun{Add GameState Type Option Result ExtendedBomber Pos} 
+      {Send ExtendedBomber.mybomberPort add(Type Option Result)}
+      {Wait Result}
+      case Type 
+      of point then UpdateExtenderBomber in 
+         UpdateExtenderBomber = {Adjoin ExtendedBomber extendedBomber(score:Result)}
+          
+         {Adjoin GameState gameState(unveiledPoint: {List.subtract GameState.unveiledPoint Pos}
+                                     playersList:{Replace GameState.playersList ExtendedBomber UpdateExtenderBomber})}
+      [] bomb then 
+         {Adjoin GameState gameState(unveiledBonus: {List.subtract GameState.unveiledBonus Pos})}
+      end      
+   end 
+
+  
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  %  End Update Gamestate 
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
     fun{DoAction GameState ExtendedBomber}
-        %{Delay 400}
-            ID Action UpdateGameState in  
-            %%PlayOnce               
+            ID Action State Broadcast Wind in
+            %%PlayOnce 
+                         
             {Send ExtendedBomber.mybomberPort doaction(ID Action)}
             {Wait ID} 
             {Wait Action}
             case Action 
             of move(Pos) then  
-                UpdateExtenderBombers in
-                {Show '6.1'#Action}
+            {Show 'Action is ' #Action}
                 % check if in this position there are a point or a bonus 
                 if {List.member Pos GameState.unveiledPoint} then 
-                {Show '6.2 point in this pos '}
+                
                     %there are a point in this position
                     Result in
-                    {Send ExtendedBomber.mybomberPort add(point 1 Result)}
-                    {Wait Result}
-                    UpdateExtenderBombers = {Adjoin ExtendedBomber extendedBomber(currentPosition:Pos
-                                                                                  score:Result  
-                                                                                  )}
-                    UpdateGameState= {Adjoin GameState gameState(
-                                playersList: {Replace GameState.playersList ExtendedBomber UpdateExtenderBombers}
-                                unveiledPoint: {List.subtract GameState.unveiledPoint Pos}
-                                messageList: {Append GameState.messageList [movePlayer(ID Pos)]} 
-                                actionToShow: {Append GameState.actionToShow [movePlayer(ID Pos) 
-                                                                              hidePoint(Pos)
-                                                                              scoreUpdate(ID Result)]}                            
-                    )}
-                    UpdateGameState
+                    State = [movePlayer(ID Pos ExtendedBomber) hidePoint(Pos) add(point 1 Result ExtendedBomber Pos)]
+                    Broadcast= [movePlayer(ID Pos)]
+                    Wind = [movePlayer(ID Pos) hidePoint(Pos) scoreUpdate(ID Result)]
+
+                    rec(1:State 2:Broadcast 3:Wind)                 
                 elseif {List.member Pos GameState.unveiledBonus} then
-                  {Show '6.3 bonus in this pos '}
+                  
                     %there are a bonus in this position 
                     Bonus Result in
                     Bonus ={CreateBonus GameState}
                         if (Bonus == GameState.pointBonus) then 
                         % add BonusPoint
-                        {Send ExtendedBomber.mybomberPort add(point Bonus Result)}
-                        {Wait Result}
-                        UpdateExtenderBombers = {Adjoin ExtendedBomber extendedBomber(currentPosition:Pos
-                                                                                  score:Result  
-                                                                                  )}
-                        UpdateGameState= {Adjoin GameState gameState(
-                                playersList: {Replace GameState.playersList ExtendedBomber UpdateExtenderBombers}
-                                unveiledBonus: {List.subtract GameState.unveiledBonus Pos}
-                                messageList: {Append GameState.messageList [movePlayer(ID Pos)]} 
-                                actionToShow: {Append GameState.actionToShow [movePlayer(ID Pos) 
-                                                                        hideBonus(Pos)
-                                                                        scoreUpdate(ID Result)]}
-                        )} 
-                        UpdateGameState
-                        else % add BonusBomb
-                        {Send ExtendedBomber.mybomberPort add(bomb 1 Result)}
-                        {Wait Result}
-                        %% to check if we need to ask for id again  
-                        UpdateExtenderBombers = {Adjoin ExtendedBomber extendedBomber(currentPosition:Pos)}
-                        UpdateGameState= {Adjoin GameState gameState(
-                                    playersList:  {Replace GameState.playersList ExtendedBomber UpdateExtenderBombers}
-                                    unveiledBonus: {List.subtract GameState.unveiledBonus Pos}
-                                    messageList:  {Append GameState.messageList [movePlayer(ID Pos)]} 
-                                    actionToShow: {Append GameState.actionToShow [movePlayer(ID Pos) 
-                                                                            hideBonus(Pos)]}                                
-                        )}
-                        UpdateGameState
+                            State = [movePlayer(ID Pos ExtendedBomber) hideBonus(Pos) add(point Bonus Result ExtendedBomber Pos)]
+                            Broadcast= [movePlayer(ID Pos)]
+                            Wind = [movePlayer(ID Pos) hideBonus(Pos) scoreUpdate(ID Result)]
+
+                            rec(1:State 2:Broadcast 3:Wind)
+                        else % add BonusBomb                                          
+                            State = [movePlayer(ID Pos ExtendedBomber) hideBonus(Pos) add(bomb 1 Result ExtendedBomber Pos)] 
+                            Broadcast= [movePlayer(ID Pos)]
+                            Wind = [movePlayer(ID Pos) hideBonus(Pos)]
+
+                            rec(1:State 2:Broadcast 3:Wind)
                         end 
-                else %there are a nothing in this position
-                  {Show '6.4 nothing in this pos '} 
-                  UpdateExtenderBombers = {Adjoin ExtendedBomber extendedBomber(currentPosition:Pos)}
-                  UpdateGameState= {Adjoin GameState gameState(
-                            playersList:  {Replace GameState.playersList ExtendedBomber UpdateExtenderBombers}
-                            messageList:  {Append GameState.messageList [movePlayer(ID Pos)]} 
-                            actionToShow: {Append GameState.actionToShow [movePlayer(ID Pos)]}
-                  )}
-                  {Show '6.4.1 nothing in this pos '#UpdateGameState} 
-                  UpdateGameState
+                else %there are a nothing in this position                  
+                   State = [movePlayer(ID Pos ExtendedBomber)]
+                   Broadcast= [movePlayer(ID Pos)]
+                   Wind = [movePlayer(ID Pos)]                     
+                   rec(1:State 2:Broadcast 3:Wind)                  
                 end
-            [] bomb(Pos) then 
-                    {Show '6.5 bom  '}                
-                    UpdateGameState= {Adjoin GameState gameState(
-                            messageList:  {Append GameState.messageList [bombPlanted(Pos)]} 
-                            actionToShow: {Append GameState.actionToShow [spawnBomb(Pos)]}
-                            bombList: {Append GameState.bombList [{CreateBomb Pos ExtendedBomber}]}
-                    )}
-                    UpdateGameState
-            %[] add extention exemple shield                                           
+            [] bomb(Pos) then                      
+                     State = [bombPlanted(Pos ExtendedBomber)]
+                     Broadcast= [bombPlanted(Pos)]
+                     Wind = [spawnBomb(Pos)]
+                     {Show5 '1 BOMB PLANTED: message to process'# State# Pos}
+                     rec(1:State 2:Broadcast 3:Wind)               
+            %[] add extention exemple shield 
+            else nil                                           
             end
     end    
+
 
     fun{RefreshList GameState}
        {Adjoin GameState gameState(messageList:nil actionToShow:nil)}
@@ -556,6 +656,23 @@ fun{ExploseListPoints GameState ListPointToExplose Bomb}
        end 
      end
 
+
+     proc{BroadcastDoAction PlayerList MessageInfoList}
+       for Player in PlayerList do 
+         for Message in MessageInfoList do 
+            {Show 'Message '# Message}
+            case Message                    
+            of bombPlanted(Pos ExtendedBomber) then
+                {Send Player.mybomberPort info(bombPlanted(Pos))}
+            [] movePlayer(ID Pos ExtendedBomber) then 
+                   {Send Player.mybomberPort info(movePlayer(ID Pos))}
+             else   
+                {Send Player.mybomberPort info(Message)}
+            end
+         end 
+       end 
+     end
+     
     fun{FuncEvaluation GameState}
         % TODO
         0
@@ -633,15 +750,14 @@ fun{ExploseListPoints GameState ListPointToExplose Bomb}
   % Play One turn
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   fun {Play GameState ExtendedBomber}
-    UpdateGameState NewGameState BroadC
+    UpdateGameState NewGameState BroadC Tbegin Tend
   in   
         if {CheckIfAlive ExtendedBomber} then  
-           {Show2 'ExtendedBomber id: '#ExtendedBomber}       
+           {Show5 'Bomb List to update Last and first  here il faut decrementer '#GameState.bombList}       
           % this player is alive
             UpdateGameState = {UpdateGamestate {RefreshList GameState}}
             {Show '1'}
-            {Show (UpdateGameState.actionToShow == nil)}
-            
+            {Show (UpdateGameState.actionToShow == nil)}            
             if (UpdateGameState.playersList == nil ) 
                 then   % every body dead --> end
                 {Show '2'} 
@@ -658,13 +774,35 @@ fun{ExploseListPoints GameState ListPointToExplose Bomb}
                 then  % one winner --> end show winner  
                 {Show '5'}
                 {GotAWinner UpdateGameState} 
-            else  % Continue to play 
+            else  MessageRec in % Continue to play               
                 {Show '6'}
-                NewGameState = {DoAction UpdateGameState ExtendedBomber} 
-                {Show '7'}
-                {BroadcastMessage UpdateGameState.playersList NewGameState.messageList}
-                {Show '8'}
-                NewGameState
+                {Show5 'List Bomb After UPDATE %%%%%%%%%%%%%%%%%/n'# UpdateGameState.bombList}
+                {Show5 '**********Actions to show after update bomb **********/n'# UpdateGameState.actionToShow}
+                MessageRec = {DoAction UpdateGameState ExtendedBomber}
+                if (MessageRec \= nil ) then ToBroadcast LastGamestate in 
+                    {Show '7.0' # MessageRec}
+                    {Show5 ' 2 Message to execute ' # MessageRec.1}
+                    {Show '7.0' # MessageRec.2}
+                    {Show '7.0' # MessageRec.3}
+                     {Show5 ' 2.1Message to show ' # MessageRec.3}
+                    {TreatStream MessageRec.1 UpdateGameState NewGameState}
+                     {Show5 '5 After proceced list bomb: ' #NewGameState.bombList}
+                    % need to put show info dans le gamestate
+                    {Show '7'}
+                    %Broadcast Bomb and Do action 
+                    
+                    ToBroadcast =  {Append NewGameState.messageList MessageRec.2}
+                    {Show 'ToBroadcats ' # ToBroadcast}
+                    {BroadcastMessage NewGameState.playersList  ToBroadcast }
+                    {Show '8'}
+                    
+                    LastGamestate= {Adjoin NewGameState gameState(actionToShow:{Append NewGameState.actionToShow MessageRec.3}
+                                                    messageList: ToBroadcast)} 
+                    {Show5 '**********Actions to show to show in windows **********/n'# LastGamestate.actionToShow}
+                    LastGamestate 
+                else 
+                    UpdateGameState
+                end
             end
         else % this palyer is Dead 
             GameState
@@ -675,56 +813,85 @@ fun{ExploseListPoints GameState ListPointToExplose Bomb}
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   % Simultaneous Port Acces 
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+in
     fun{AccesToGameState}
-       GameStateBasic GameState Stream Port
+       GameStateBasic GameState Stream Port FinalGamestate 
    in
       {NewPort Stream Port}
       GameStateBasic = {CreateState} 
       GameState = {Adjoin GameStateBasic gameState(decision:true)}
-      thread {TreatStream Stream GameState} end
+      thread {TreatStream Stream GameState FinalGamestate} end
       Port
    end 
 
-   proc{TreatStream Stream GameState}
-    {System.show Stream.1}
+   proc{TreatStream Stream GameState FinalGamestate}
+    %{System.show Stream.1}
     case Stream
-    of nil then skip
+    of nil then FinalGamestate= GameState
     [] Message|Stail then
            case Message
         of play(NewGameState ExtendedBomber) then 
                 {Show2 'PLAY THIS GAMESTATE IS BOUND '#GameState.actionToShow}
                 NewGameState= {Play GameState ExtendedBomber}
                  {Show2 'play(NewGameState ExtendedBomber)' # NewGameState.actionToShow}
-                {TreatStream Stail NewGameState}
+                {TreatStream Stail NewGameState FinalGamestate}
+
         [] decision(DecisionResult) then NewGameState in
                 if GameState.decision == true then 
                     NewGameState= {Adjoin GameState gameState(decision:false)}
                     DecisionResult = true 
-                    {TreatStream Stail NewGameState } 
+                    {TreatStream Stail NewGameState FinalGamestate}
                 else 
                     DecisionResult = false 
                     {Show2 'decision(DecisionResult)'# DecisionResult}
-                    {TreatStream Stail GameState} 
+                    {TreatStream Stail GameState FinalGamestate} 
                 end
         [] freeGameState() then  NewGameState in
                 NewGameState= {Adjoin GameState gameState(decision:true)}
                  {Show2 'updatingDecision(Val)'}
-                {TreatStream Stail NewGameState}
+                {TreatStream Stail NewGameState FinalGamestate}
+
         [] getGameState(ResultGameState) then 
-                 ResultGameState= GameState
-                 {Show2 'THIS GAMESTATE IS BOUND '#GameState}
-                 {Show2 'get Gamestate()' #ResultGameState}
-                {TreatStream Stail GameState}
+                ResultGameState= GameState
+                {Show2 'THIS GAMESTATE IS BOUND '#GameState}
+                {Show2 'get Gamestate()' #ResultGameState}
+                {TreatStream Stail GameState FinalGamestate}
+
         [] updateGameState(NewGameState) then 
                 {Show2 'update NewGamestate'}
-                {TreatStream Stail NewGameState}
+                {TreatStream Stail NewGameState FinalGamestate}
+                %Update info in State 
+        [] hidePoint(Pos) then NewGameState in
+                NewGameState = {HidePoint GameState Pos}
+                {TreatStream Stail NewGameState FinalGamestate}
+                
+        [] bombPlanted(Pos ExtendedBomber) then NewGameState in 
+                NewGameState = {BombPlanted GameState Pos ExtendedBomber}
+                {Show ' 3 in treat stream Bomb List is '# NewGameState.bombList}
+                {TreatStream Stail NewGameState FinalGamestate}
+
+         [] hideBonus(Pos) then NewGameState in
+                NewGameState = {HideBonus GameState Pos}
+                {TreatStream Stail NewGameState FinalGamestate}
+
+         [] movePlayer(ID Pos ExtendedBomber) then NewGameState in 
+                NewGameState= {MovePlayer GameState Pos ExtendedBomber}
+                {TreatStream Stail NewGameState FinalGamestate} 
+
+        [] doaction(ExtendedBomber Message )then Message in
+                Message = {DoAction GameState ExtendedBomber}
+                {TreatStream Stail GameState FinalGamestate}
+
+        [] add(Type Option Result ExtendedBomber Pos) then NewGameState in 
+                NewGameState = {Add GameState Type Option Result ExtendedBomber Pos} 
+                {TreatStream Stail NewGameState FinalGamestate} 
+
         [] testMessage(Coucou)then
-            Coucou='Coucou'
-            {TreatStream Stail GameState}
+                Coucou='Coucou'
+                {TreatStream Stail GameState FinalGamestate}     
         else
-	        {System.show 'unsupported message'#Message}
-	        {TreatStream Stail GameState}
+	        %{System.show 'unsupported message'#Message}
+	        {TreatStream Stail GameState FinalGamestate}
          end
       end
    end
@@ -732,3 +899,5 @@ fun{ExploseListPoints GameState ListPointToExplose Bomb}
    
 end % End Module
 
+
+               
