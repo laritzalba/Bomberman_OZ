@@ -708,7 +708,7 @@ fun{ExploseListPoints GameState ListPointToExplose Bomb}
            displayWinner(ID)|{AddWinnerMessage T}
         end
     end 
-
+  
     fun {GetWinner GameState}
       fun{CheckScore PlayerList WinnerList MaxScore}
         case PlayerList 
@@ -961,7 +961,10 @@ in
                 {TreatStream Stail GameState FinalGamestate}
         [] getWinner(LastGAmestate) then 
                 LastGAmestate = {GotAWinner GameState} 
-                {TreatStream Stail LastGAmestate FinalGamestate} % close port  ? nil 
+                {TreatStream Stail LastGAmestate FinalGamestate} % close port  ? nil
+        [] clean() then  NewGameState in
+              NewGameState = {RefreshList GameState} 
+             {TreatStream Stail NewGameState FinalGamestate}
         else
 	        {System.show 'unsupported message'#Message}
 	        {TreatStream Stail GameState FinalGamestate}

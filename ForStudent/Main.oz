@@ -175,6 +175,23 @@ define
    end 
 
 
+   proc{ShowActionEndGame ActionList}
+   %% Attention entre explosion and hide 
+      case ActionList
+      of nil then skip 
+      [] H|T then
+          case H
+          of displayWinner(ID) then 
+            {Show3 'Drawing: '#H}
+            {Send PortWindow H} 
+            {ShowAction T}
+         else 
+           {ShowActionEndGame T}
+         end 
+      end
+   end 
+  
+
    proc {LoopTurnByTurn GameState PlayersList}
       if (GameState.endGame == true) then % end of the game 
          {Show 'Main Action to show '#GameState.actionToShow}
@@ -228,51 +245,7 @@ end
  % Simultaneous
  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
-  /* proc {LoopSimulataneous Bomberman PortGameState ThreadID}
-         Decision in 
-         {Delay ({OS.rand} mod (Input.thinkMax-Input.thinkMin))+Input.thinkMin}
-         {Send PortGameState decision(Decision)}
-         {Wait Decision}
-         if (Decision == false) then 
-             % Loop until is abailable to make changes 
-             {Show 'ThreadID: '# ThreadID #'Decision is '#Decision}
-             {LoopSimulataneous Bomberman PortGameState ThreadID}       
-         else 
-            GameState Coucou in
-            {Show 'ThreadID: '# ThreadID #'Decision is acepted'#Decision}
-            % Play once and free GameState    
-
-            {Send PortGameState getGameState(GameState)}
-            {Wait GameState}
-             {Show 'ThreadID: '# ThreadID #'Gamestate to paly '#GameState.actionToShow}
-
-    %%%%% To Delete Test Message Port %%%%%%
-    {Send PortGameState testMessage(Coucou)}
-    {Wait Coucou}
-    {Show 'Message test to Port GameState Coucoou2 '#Coucou}
-    %%%%%%% End To Delete%%%%%%%%%%%%%%%%%%%
-
-           if (GameState.endGame == true) then % end of the game 
-               {Show 'ThreadID: '# ThreadID #'Main Action to show 3 '} %#GameState.actionToShow}
-               {ShowAction GameState.actionToShow}
-            else 
-               UpdateGameState in
-               {Show 'ThreadID: '# ThreadID #'Playing 4'}
-               {Send PortGameState play(UpdateGameState Bomberman)}
-               {Wait UpdateGameState}
-                 {Show 'ThreadID: '# ThreadID #'Playing 5'}
-               {ShowAction UpdateGameState.actionToShow}
-               {Send PortGameState freeGameState()}
-               {Show 'ThreadID: '# ThreadID #'Gamestate is free '}
-               {LoopSimulataneous Bomberman PortGameState ThreadID} 
-            end
-         end    
-   end 
-*/
-
-
-   
+  
     proc {WaitForMinTime Continue}
        if Continue == unit then skip
        else 
@@ -329,14 +302,11 @@ end
             {Send PortGameState isGameOver(IsEnded)}
             {Wait IsEnded}    
             {Show5 'esperando YYYYYYYYYY4444444444444'}
-            if (IsEnded) then EndGameState in 
-               {Send PortGameState getWinner(EndGameState)}
-               {Wait EndGameState}
-               {ShowAction EndGameState.actionToShow}
+            if (IsEnded) then 
                {Send PortGameState freeGameState()}
                skip
             else AmIDead in
-               {Show5 'BOMBERMAN  (((((((((((((((()))))))))))))'# Bomberman}
+                {Show5 'BOMBERMAN  (((((((((((((((()))))))))))))'# Bomberman}
                 {Send PortGameState getBomberEtat(AmIDead Bomberman)}
                 {Wait AmIDead }
                if (AmIDead) then                
@@ -349,10 +319,9 @@ end
                   {GameControler.broadcastMessage LastGameState.playersList DoActionGamestate.2}
                   {ShowAction DoActionGamestate.3}
 
-                  {Send PortGameState testNulmessages()} 
-                  %{Send PortGameState freeSecondDecision()}                  
+                  {Send PortGameState clean()} 
+ 
                   {Send PortGameState freeGameState()}
-                  
                   {Show5 '6 ThreadID: '# ThreadID #' Update bomb is free '}
                   {Show5 ' 7 ThreadID: '# ThreadID #'Gamestate is free '}
                   {Delay 100} % change delay el min time of game /2
@@ -372,66 +341,60 @@ end
         {CreateThread Tail PortGameState Count+1}
       end
    end 
-
-
-  /* proc{LoopUpdateBomb PortGameState}
-     SecondDecision
-   in
-      {Send PortGameState getSecondDecision(SecondDecision)}
-      {Wait SecondDecision}
-     if (SecondDecision == false ) then      
-         {LoopUpdateBomb PortGameState}
-     else GamestateUpToDate in 
-       %{Send PortGameState changing(1)}
-
-       {Send PortGameState updateBombGamestate(GamestateUpToDate)}
-       {Wait GamestateUpToDate}
-       {GameControler.broadcastMessage GamestateUpToDate.playersList GamestateUpToDate.messageList}
-       {ShowAction GamestateUpToDate.actionToShow}
-       {Send PortGameState freeSecondDecision()}
-       {Show3 'UpdatingBomb'}
-       {Delay 100} % wait to do next update
-       %{Send Game_Port changing(0)}
-       {LoopUpdateBomb PortGameState}
-      end 
-   end*/
    
    proc{LoopUpdateBomb BombList PortGameState}
        case BombList 
        of nil then skip 
-       [] Bomb|T then 
-	      if(Bomb.timingBomb == unit) then GamestateUpToDate in
-           {Show5 'Entro a la bomba!!!!!'}
-           {Send PortGameState changing(1)}
-	        {Send PortGameState updateBombGamestate(GamestateUpToDate)}
-           {Wait GamestateUpToDate}
-           {GameControler.broadcastMessage GamestateUpToDate.playersList GamestateUpToDate.messageList}
-           {ShowAction GamestateUpToDate.actionToShow}
-           {Send PortGameState changing(0)}
-           {Show5 'Salgo de la bomba !!!!!!!!!!!!'}
-           {LoopUpdateBomb T PortGameState}
-	      else
-	         {LoopUpdateBomb BombList PortGameState}
-         end
+       [] Bomb|T then  IsEnded in 
+            if(Bomb.timingBomb == unit) then GamestateUpToDate in
+               {Show5 'Entro a la bomba!!!!!'}
+               {Send PortGameState changing(1)}
+               {Send PortGameState updateBombGamestate(GamestateUpToDate)}
+               {Wait GamestateUpToDate}
+               {GameControler.broadcastMessage GamestateUpToDate.playersList GamestateUpToDate.messageList}
+               {Send PortGameState isGameOver(IsEnded)}
+               {Wait IsEnded}    
+                  if (IsEnded) then 
+                     {Send PortGameState changing(0)}
+                     skip
+                  else                
+                     {ShowAction GamestateUpToDate.actionToShow}
+                     {Send PortGameState changing(0)}
+                     {Show5 'Salgo de la bomba !!!!!!!!!!!!'}
+                     {Send PortGameState clean()}
+                     {LoopUpdateBomb T PortGameState}
+                  end
+            else 
+                  {LoopUpdateBomb BombList PortGameState}
+            end
       end
    end
 
     proc{CheckTimingBomb PortGameState} 
-         List  GameState
+         List  GameState IsEnded
     in
-      {Send PortGameState isGameOver(IsEnded)}
-      {Wait IsEnded}    
-      if (IsEnded) then skip
-      else 
          {Send PortGameState getGameState(GameState)}
          {Wait GameState}
          {LoopUpdateBomb GameState.bombList PortGameState}
          {Delay 100} % delay time min of all game /2 
          {CheckTimingBomb PortGameState} 
-      end 
    end
    
-      
+
+   proc{EndOfGame PortGameState}
+      IsEnded
+   in
+      {Send PortGameState isGameOver(IsEnded)}
+      {Wait IsEnded}    
+      if (IsEnded) then EndGameState in 
+         {Send PortGameState getWinner(EndGameState)}
+         {Wait EndGameState}
+         {ShowAction EndGameState.actionToShow} 
+      else
+        {EndOfGame PortGameState}
+      end 
+   end 
+
   proc{Simultaneous}
      Coucou PortGameState ResultGameState UpdatedGameState GameState PlayerToTest
   in
@@ -452,6 +415,8 @@ end
     
     thread {CheckTimingBomb PortGameState} end
     {CreateThread UpdatedGameState.playersList PortGameState 1}
+    thread {EndOfGame PortGameState} end 
+    
     %{Show3 'Creating Bomb Update thread'}
       
       
