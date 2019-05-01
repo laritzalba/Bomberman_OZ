@@ -12,7 +12,7 @@ in
    fun{PlayerGenerator Kind ID}
       case Kind
       of player000bomber then {Player000bomber.portPlayer ID}
-      %[] player000name then {Player000basic.portPlayer ID}
+      [] player000name then {Player000basic.portPlayer ID}
       %% Add here the pattern to recognize the name used in the 
       %% input file and launch the portPlayer function from the functor
       %%[] player000name then {Player000name.portPlayer ID}
