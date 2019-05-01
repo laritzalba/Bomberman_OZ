@@ -70,12 +70,11 @@ define
      
 
   % Debug
-   LocalDebug= false 
-   LocalDebug2= false  
+   LocalDebug= false
+   LocalDebug2= false
    LocalDebug3= false
    LocalDebug4= false
-   LocalDebug5= true 
-
+   LocalDebug5= false
 
  %%% TOOLS %%%%
   proc {Show Msg}
