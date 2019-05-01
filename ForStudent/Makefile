@@ -18,10 +18,12 @@ gameM :
 	@ozc -c Main.oz
 gameI : 
 	@ozc -c Input.oz
-player :
+basic :
 	@ozc -c Player000basic.oz
+simultaneous :
+	@ozc -c Player000simultaneous.oz
 run :
 	@ozengine Main.ozf
 
 clean :
-	@rm -rf GUI.ozf Input.ozf Main.ozf PlayerManager.ozf GameControler.ozf Player000basic.ozf
+	@rm -rf GUI.ozf Input.ozf Main.ozf PlayerManager.ozf GameControler.ozf Player000basic.ozf Player000simultaneous.ozf
