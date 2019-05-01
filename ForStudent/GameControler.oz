@@ -136,8 +136,7 @@ define
          endGame: false
          winnerList:nil
          wfloorSapwan:MapDescription.floorSapwan
-         )
-  
+         )  
   end
   
    fun {CreatePortBomberAndExtend BombersList Count}
@@ -480,7 +479,7 @@ fun{ExploseListPoints GameState ListPointToExplose Bomb}
 
 
 
-   /* fun{UpdateBomb GameState}
+    fun{UpdateBomb GameState}
         fun {Helper_UpdateBomb GameState ListBomb UpdatedListBomb}
             case ListBomb
             of nil then rec(lb:UpdatedListBomb gs:GameState)
@@ -507,7 +506,8 @@ fun{ExploseListPoints GameState ListPointToExplose Bomb}
             {Adjoin Rec.gs gameState(bombList:Rec.lb)} 
         end       
     end
-    */
+
+/*
      fun{UpdateBomb GameState}
         fun {Helper_UpdateBomb GameState ListBomb UpdatedListBomb}
             case ListBomb
@@ -533,7 +533,7 @@ fun{ExploseListPoints GameState ListPointToExplose Bomb}
         end       
     end
 
- 
+ */
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   % Update Gamestate
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -648,7 +648,7 @@ fun{ExploseListPoints GameState ListPointToExplose Bomb}
        {Adjoin GameState gameState(messageList:nil actionToShow:nil)}
     end 
 
-     proc{BroadcastMessage PlayerList MessageInfoList }
+     proc{BroadcastMessage PlayerList MessageInfoList}
        for Player in PlayerList do 
          for Message in MessageInfoList do 
            {Send Player.mybomberPort info(Message)}
@@ -679,14 +679,10 @@ fun{ExploseListPoints GameState ListPointToExplose Bomb}
     end
 
    % to delete
-    fun{UpdateGamestate GameState}
-        NewGameState GameStateUpdateBomb
-    in 
+    fun{UpdateBombGamestate GameState}    
        % move and explose bomb 
-       {UpdateBomb GameState}
-       
-       %Only move 
-       %GameState
+       {UpdateBomb {RefreshList GameState}}
+
     end
 
     fun {AddWinnerMessage PlayerList}
@@ -746,6 +742,29 @@ fun{ExploseListPoints GameState ListPointToExplose Bomb}
         State
     end
 
+    fun {IsGameOver  GameState}
+        if (GameState.playersList == nil ) 
+            then   % every body dead --> end
+            {Show '2'} 
+            true       
+        elseif ({Length GameState.playersList } == 1) 
+            then  % one winner --> end show winner        
+            {Show '3 actionToShow' # GameState.actionToShow}                
+           true
+        elseif GameState.nbRemainingBoxes == 0 
+            then % there are not more boxes left --> end show winner(s)            
+            {Show2 '4'}
+            true
+        elseif({FuncEvaluation GameState} == 1) 
+            then  % one winner --> end show winner  
+            {Show '5'}
+             true
+        else 
+            false
+        end 
+    end 
+   
+
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   % Play One turn
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -755,25 +774,11 @@ fun{ExploseListPoints GameState ListPointToExplose Bomb}
         if {CheckIfAlive ExtendedBomber} then  
            {Show5 'Bomb List to update Last and first  here il faut decrementer '#GameState.bombList}       
           % this player is alive
-            UpdateGameState = {UpdateGamestate {RefreshList GameState}}
+            UpdateGameState = {UpdateBombGamestate GameState}
             {Show '1'}
             {Show (UpdateGameState.actionToShow == nil)}            
-            if (UpdateGameState.playersList == nil ) 
-                then   % every body dead --> end
-                {Show '2'} 
-                {GotAWinner UpdateGameState}      
-            elseif ({Length UpdateGameState.playersList } == 1) 
-                then  % one winner --> end show winner        
-                {Show '3 actionToShow' # GameState.actionToShow}                
-                {GotAWinner UpdateGameState} 
-            elseif UpdateGameState.nbRemainingBoxes == 0 
-                then % there are not more boxes left --> end show winner(s)            
-                {Show2 '4'}
-                {GotAWinner UpdateGameState} 
-            elseif ({FuncEvaluation UpdateGameState} == 1) 
-                then  % one winner --> end show winner  
-                {Show '5'}
-                {GotAWinner UpdateGameState} 
+            if {IsGameOver GameState} then 
+               {GotAWinner GameState} 
             else  MessageRec in % Continue to play               
                 {Show '6'}
                 {Show5 'List Bomb After UPDATE %%%%%%%%%%%%%%%%%/n'# UpdateGameState.bombList}
@@ -793,7 +798,7 @@ fun{ExploseListPoints GameState ListPointToExplose Bomb}
                     
                     ToBroadcast =  {Append NewGameState.messageList MessageRec.2}
                     {Show 'ToBroadcats ' # ToBroadcast}
-                    {BroadcastMessage NewGameState.playersList  ToBroadcast }
+                    {BroadcastMessage NewGameState.playersList  ToBroadcast}
                     {Show '8'}
                     
                     LastGamestate= {Adjoin NewGameState gameState(actionToShow:{Append NewGameState.actionToShow MessageRec.3}
@@ -809,7 +814,17 @@ fun{ExploseListPoints GameState ListPointToExplose Bomb}
         end 
    end
 
-
+ % Return true if bomber is in this List of extender Bombers 
+  fun{FindBomber PlayerList Bomberman}
+     case PlayerList 
+     of nil then false
+     [] CurrentBomber|T then 
+        if CurrentBomber.localID == Bomberman.localID then true 
+         else 
+         {FindBomber PlayerList T}
+         end 
+    end 
+end 
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   % Simultaneous Port Acces 
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -819,7 +834,7 @@ in
    in
       {NewPort Stream Port}
       GameStateBasic = {CreateState} 
-      GameState = {Adjoin GameStateBasic gameState(decision:true)}
+      GameState = {Adjoin GameStateBasic gameState(decision:true secondDecision: true)}
       thread {TreatStream Stream GameState FinalGamestate} end
       Port
    end 
@@ -851,6 +866,23 @@ in
                  {Show2 'updatingDecision(Val)'}
                 {TreatStream Stail NewGameState FinalGamestate}
 
+
+        [] getSecondDecision(SecondDecision) then NewGameState in 
+                 if GameState.secondDecision == true then 
+                    NewGameState= {Adjoin GameState gameState(secondDecision:false)}
+                    SecondDecision = true 
+                    {TreatStream Stail NewGameState FinalGamestate}
+                else 
+                    SecondDecision = false 
+                    {Show2 'decision(DecisionResult)'# SecondDecision}
+                    {TreatStream Stail NewGameState FinalGamestate} 
+                end               
+            
+        []freeSecondDecision() then NewGameState in
+                NewGameState= {Adjoin GameState gameState(secondDecision:true)}
+                {Show2 'freeSecondDecision()'}
+                {TreatStream Stail NewGameState FinalGamestate}        
+
         [] getGameState(ResultGameState) then 
                 ResultGameState= GameState
                 {Show2 'THIS GAMESTATE IS BOUND '#GameState}
@@ -878,24 +910,137 @@ in
                 NewGameState= {MovePlayer GameState Pos ExtendedBomber}
                 {TreatStream Stail NewGameState FinalGamestate} 
 
-        [] doaction(ExtendedBomber Message )then Message in
-                Message = {DoAction GameState ExtendedBomber}
+        [] doaction(ExtendedBomber Action)then
+                Action = {DoAction GameState ExtendedBomber}
                 {TreatStream Stail GameState FinalGamestate}
 
         [] add(Type Option Result ExtendedBomber Pos) then NewGameState in 
                 NewGameState = {Add GameState Type Option Result ExtendedBomber Pos} 
-                {TreatStream Stail NewGameState FinalGamestate} 
+                {TreatStream Stail NewGameState FinalGamestate}            
+        
+        [] isGameOver(IsEnded) then 
+                IsEnded= {IsGameOver GameState} 
+                {TreatStream Stail GameState FinalGamestate} 
 
+          [] getBomberEtat(AmIDead Bomberman) then 
+                AmIDead = {FindBomber GameState.deadPlayersList Bomberman}
+                {TreatStream Stail GameState FinalGamestate} 
+                
+          [] broadcast(ToBroadcast) then 
+                {BroadcastMessage GameState.playersList ToBroadcast}
+                {TreatStream Stail GameState FinalGamestate} 
+                %Nex to review 
+          [] executeAction(DoActionGamestate ActionList NewGameState) then 
+                    {TreatStream ActionList DoActionGamestate NewGameState}
+                    {TreatStream Stail NewGameState FinalGamestate}
         [] testMessage(Coucou)then
                 Coucou='Coucou'
                 {TreatStream Stail GameState FinalGamestate}     
         else
-	        %{System.show 'unsupported message'#Message}
+	        {System.show 'unsupported message'#Message}
 	        {TreatStream Stail GameState FinalGamestate}
          end
       end
    end
 
+  /*
+  proc{ExecuteActions Stream GameState FinalGamestate}
+    %{System.show Stream.1}
+    case Stream
+    of nil then FinalGamestate= GameState
+    [] Message|Stail then
+           case Message
+            of movePlayer(ID Pos) then 
+            [] hideBonus(Pos) then 
+            [] hidePoint(Pos) then 
+            [] add(Type Option Result) then % add(point Bonus Result ExtendedBomber Pos) = 
+            [] bombPlanted(Pos) then 
+           end
+    end        
+ end 
+
+
+
+ fun{GetMessagesToBroadcast Message} 
+    case Messages
+    of nil then nil
+    [] CurrentMessage|Stail then
+           case CurrentMessage
+            of spawnPlayer(ID Pos) % Player <bomber> ID has spawn in <position> Pos
+              then  CurrentMessage|{Broadcast Stail} 
+            [] movePlayer(ID Pos) % Player <bomber> ID has move to <position> Pos
+                then  CurrentMessage|{Broadcast Stail} 
+            [] deadPlayer(ID) % Player <bomber> ID has died
+                then  CurrentMessage|{Broadcast Stail} 
+            [] bombPlanted(Pos) % Bomb has been planted at <position> Pos
+                then  CurrentMessage|{Broadcast Stail} 
+            [] bombExploded(Pos) % Bomb has exploded at <position> Pos
+                then  CurrentMessage|{Broadcast Stail} 
+            [] boxRemoved(Pos) % Tile at <position> Pos who previously had a box on it is now a floor
+                then  CurrentMessage|{Broadcast Stail} 
+             else {GetMessagesToBroadcast Stail}   
+           end
+    end        
+ end
+
+
+  proc{ShowInWindows PortWindows MessageList}
+    case MessageList
+    of nil then skip
+    [] CurrentMessage|Stail then
+        case CurrentMessage
+        of buildWindow % Create and launch the window (no player on it).
+            then {Send PortWindow CurrentMessage} 
+            {ShowInWindows PortWindows Stail}
+        [] initPlayer(ID) % Initialize the <bomber> ID (doesn’t place the bomberman but just inform the GUI of it’s existence, allow to create the score place initialised to 0 and the lives counter initialised to Input.nbLives). For a given ID, this should only be used once.
+            then {Send PortWindow CurrentMessage} 
+            {ShowInWindows PortWindows Stail}
+        [] spawnPlayer(ID Pos) % Spawn the <bomber> ID at <position> Pos. The bomberman should be displayed on the board when sending this message.
+            then {Send PortWindow CurrentMessage} 
+            {ShowInWindows PortWindows Stail}
+        [] movePlayer(ID Pos) % Move the <bomber> ID at new position <position> Pos.
+            then {Send PortWindow CurrentMessage} 
+            {ShowInWindows PortWindows Stail}
+        [] hidePlayer(ID) % Hide the <bomber> ID. This removes the bomberman from the screen.
+            then {Send PortWindow CurrentMessage} 
+            {ShowInWindows PortWindows Stail}
+        [] spawnBonus(Pos) % Spawn the bonus at <position> Pos. The bonus should be displayed on the board when sending this message.
+            then {Send PortWindow CurrentMessage} 
+            {ShowInWindows PortWindows Stail}
+        [] hideBonus(Pos) % Hide the bonus at <position> Pos. This removes the bonus from the screen.
+            then {Send PortWindow CurrentMessage} 
+            {ShowInWindows PortWindows Stail}
+        [] spawnPoint(Pos) %
+            then {Send PortWindow CurrentMessage} 
+            {ShowInWindows PortWindows Stail}
+        [] hidePoint(Pos) % Same as for bonuses, but for points.
+            then {Send PortWindow CurrentMessage} 
+            {ShowInWindows PortWindows Stail}
+        [] spawnBox(Pos) %
+            then {Send PortWindow CurrentMessage} 
+            {ShowInWindows PortWindows Stail}
+        [] spawnBomb(Pos) %
+            then {Send PortWindow CurrentMessage} 
+            {ShowInWindows PortWindows Stail}
+        [] hideBox(Pos) % Same as for bonuses, but for boxes. For the initialisation, an additionnal parameter IsBonus is added. It should be put to true if the box is put over a bonus, false if the box is put over a point.
+            then {Send PortWindow CurrentMessage} 
+            {ShowInWindows PortWindows Stail}
+        [] lifeUpdate(ID Life) % Change the value of the counter for the number of lives left for <bomber> ID to the new number of <life> Life (put the new value Life as number of lives left for the bomberman).
+            then {Send PortWindow CurrentMessage} 
+            {ShowInWindows PortWindows Stail}
+        [] scoreUpdate(ID Score) % Change the value of the counter for the score for <bomber> ID to the new number of <score> Score (put the new value Score as score for the bomberman).
+             then {Send PortWindow CurrentMessage} 
+            {ShowInWindows PortWindows Stail}
+        [] displayWinner(ID) % Inform the end of the game, giving the <bomber> ID of the highest score bomberman.
+            then {Send PortWindow CurrentMessage} 
+            {ShowInWindows PortWindows Stail}
+         else 
+            {ShowInWindows PortWindows Stail}
+        end
+    end        
+ end
+
+ */
    
 end % End Module
 
