@@ -106,8 +106,7 @@ in
     * Return the value corresponding to the type of tile in position X Y (1,2,3 or 4)
     */
     fun {CheckTile Map X Y}
-      if X == 1 orelse Y == 1 orelse X == Input.nbColumn orelse Y == Input.nbRow then %Right line
-      %if X == 1 orelse Y == 1 orelse X == Input.nbRow orelse Y == Input.nbColumn then %Wrong line
+      if X == 1 orelse Y == 1 orelse X == Input.nbColumn orelse Y == Input.nbRow then
          1
       else
          {Nth {Nth Map Y} X}
@@ -120,11 +119,11 @@ in
     */
    %Cas limite: Tourne en boucle si un player se trouve entouré uniquement de murs (possible si map mal faite et spawn à cet endroit là)
    proc{MoveRandom PlayerInfo NewPlayer}
-   {Show2 'MoveRandom'}
+   {Show 'MoveRandom'}
       local
          NewPos Rand
          fun{GetNewPos Pos Dir}
-            {Show2 'GetNewPos in direction'#Dir}
+            {Show 'GetNewPos in direction'#Dir}
             local
                TryPos
             in
@@ -169,7 +168,7 @@ in
    proc{DoAction PlayerInfo Action NewPlayer}
          Rand NewMap
       in
-         Rand = ({OS.rand} mod 1)%%%%%%%%%%TODOOOOOOOOOOOOOO remettre à 10
+         Rand = ({OS.rand} mod 10)
          if PlayerInfo.state == off then
             Action = null
             NewPlayer = PlayerInfo
@@ -188,7 +187,7 @@ in
             else % chance of 0.9 to move
                {MoveRandom PlayerInfo NewPlayer}
                Action = move(NewPlayer.currentPos)
-               {Show2 'DoAction - Moved'}
+               {Show 'DoAction - Moved'}
             end
          end
    end
@@ -294,8 +293,7 @@ in
                Rival NewRivalState TemporaryMap NewMap NewPlayer
             in 
                Rival = {GetRivalByID PlayerInfo.rivals ID}
-               if Rival == null orelse Rival.pos == null then %Problem, rival was not register on our list, shouldn't happen
-                  {Show2 'Error'#PlayerInfo.id.id#' in movePlayer: Result of GetRivalByID for playre'#ID#'is'#Rival}
+               if Rival == null orelse Rival.pos == null then %Rival was not on list, happen at start of the game
                   TemporaryMap = PlayerInfo.map
                else %Rival was on list and it is remove from old position
                   TemporaryMap = {RemovePlayer PlayerInfo.map Rival.pos.x Rival.pos.y}
