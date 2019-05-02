@@ -19,7 +19,7 @@ define
    AddPlayer
    RemovePlayer
    TreatStream
-   Name = 'namefordebug'
+   Name = 'simultaneous'
 
    %Values that represents items on map
    FLOOR = 0
@@ -27,17 +27,17 @@ define
    BOX_POINT = 2
    BOX_BONUS = 3
    FLOOR_SPAWN = 4
-   OTHER_BOMB = 1000 %
+   OTHER_BOMB = 1000
    MY_BOMB = 100
    %The values can be added. The different type informations are held in different power of 10 to be able to retrieve the information with the operation 'mod'
 
    %Control the frequence at which bombs are droped, frequency is 1/BOMB_FREQ
-   BOMB_FREQ = 5
+   BOMB_FREQ = 10
 
    % Debug
    Show Show2
-   LocalDebug= true
-   LocalDebug2= true
+   LocalDebug= false
+   LocalDebug2= false
 in
 %%% TOOLS %%%%
   proc {Show Msg} %Used for info messages (in this file)
@@ -211,7 +211,7 @@ in
       elseif Type == point then
          NewPlayerInfo = infos(id: PlayerInfo.id lives:PlayerInfo.lives bombs:PlayerInfo.bombs score:(PlayerInfo.score+Option) state:PlayerInfo.state currentPos:PlayerInfo.currentPos initPos:PlayerInfo.initPos map:PlayerInfo.map rivals:PlayerInfo.rivals)
          Result = NewPlayerInfo.score
-      else skip %This option is supported
+      else skip %This option is not supported
       end
    end
 
@@ -344,7 +344,7 @@ in
       []boxRemoved(Pos) then
             NewMap NewPlayerInfo
          in 
-            NewMap = {UpdateMap PlayerInfo.map Pos.x Pos.y 0} %Assume that if there was a box the tile is just floor (Good for basic player, but not for more advanced ones)
+            NewMap = {UpdateMap PlayerInfo.map Pos.x Pos.y 0} %Assume that if there was a box the tile is just floor
             NewPlayerInfo = infos(id:PlayerInfo.id lives:PlayerInfo.lives bombs:PlayerInfo.bombs score:PlayerInfo.score state:PlayerInfo.state currentPos:PlayerInfo.currentPos initPos:PlayerInfo.initPos map:NewMap rivals:PlayerInfo.rivals)
             NewPlayerInfo
       else %Message not handled, return same state to continue game
