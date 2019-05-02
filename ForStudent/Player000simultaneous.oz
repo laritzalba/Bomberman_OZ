@@ -106,14 +106,14 @@ in
     *          null if the player is trapped (all directions have a wall or a box)
     */
    fun{MoveRandom PlayerInfo}
-      {Show2 'MoveRandom'}
+      {Show 'MoveRandom'}
       local
          NewPos Rand
          fun{GetNewPos Pos Dir Acc}
             if Acc == 4 then %All directions have been tested, player is trapped
                null
             else
-               {Show2 'GetNewPos in direction'#Dir}
+               {Show 'GetNewPos in direction'#Dir}
                TryPos TileType in
                if Dir == 0 then
                   TryPos = pt(x:(Pos.x+1) y:Pos.y)
@@ -193,7 +193,7 @@ in
                NewPlayerInfo = PlayerInfo
                {Show 'DoAction - Moved'}
             end
-            {Show2 'DoAction'#PlayerInfo.id.id#'Action'#Action#NewPlayerInfo}
+            {Show 'DoAction'#PlayerInfo.id.id#'Action'#Action#NewPlayerInfo}
          end
       end
    end
@@ -272,7 +272,7 @@ in
          in
             NewMap = {UpdateMap PlayerInfo.map Pos.x Pos.y CurrentVal+10}
             if ID == PlayerInfo.id then %Info about itself, update of map only
-               NewPlayerInfo = infos(id:PlayerInfo.id lives:PlayerInfo.lives bombs:PlayerInfo.bombs score:PlayerInfo.score state:PlayerInfo.state currentPos:Pos initPos:PlayerInfo.initPos map:NewMap rivals:PlayerInfo.rivals)
+               NewPlayerInfo = infos(id:PlayerInfo.id lives:PlayerInfo.lives bombs:PlayerInfo.bombs score:PlayerInfo.score state:on currentPos:Pos initPos:PlayerInfo.initPos map:NewMap rivals:PlayerInfo.rivals)
             else %Info about a rival, update of map and rivals states
                   NewRivalState
                in
@@ -321,7 +321,7 @@ in
          end
          NewPlayerInfo
       []bombPlanted(Pos) then
-         {Show2 'Message bombPlanted has been used'}
+         {Show 'Message bombPlanted has been used'}
          PlayerInfo
       []spawnBomb(Pos) then
             CurrentVal = {CheckTile PlayerInfo.map Pos.x Pos.y}
@@ -414,6 +414,7 @@ in
                BomberResult = null
                {TreatStream Tail PlayerInfo}
             else %The player is on the board, return the new value of its life
+               {Show2 'BomberBasic'#PlayerInfo.id.id#'got hit and has now'#PlayerInfo.lives-1#'lives left'}
                BomberResult = death(PlayerInfo.lives-1)
                {TreatStream Tail PlayerInfo}
             end

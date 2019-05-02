@@ -23,7 +23,7 @@ define
    AddPlayer
    RemovePlayer
    TreatStream
-   Name = 'namefordebug'
+   Name = 'survivor'
 
    %Values that represents items on map
    FLOOR = 0
@@ -40,8 +40,8 @@ define
 
    % Debug
    Show Show2
-   LocalDebug= true
-   LocalDebug2= true
+   LocalDebug= false
+   LocalDebug2= false
 in
 %%% TOOLS %%%%
   proc {Show Msg} %Used for info messages (in this file)
@@ -233,8 +233,10 @@ in
    end*/
 
    fun{DangerValue Map X Y}
+      {Show 'DangerValue in pos'#X#Y}
          N S E W Val Check
          fun{CheckVal X Y DX DY N Acc}
+            {Show 'CheckVal n = '#N}
             if N == 0 then
                Acc
             else
@@ -251,7 +253,9 @@ in
          end
       in
          Check = {CheckTile Map X Y}
+         {Show 'Tile value is '#Check}
          if Check == WALL orelse Check == BOX_BONUS orelse Check == BOX_POINT then
+            {Show 'DangerValue found is null'}
             null
          else
             N = {CheckVal X Y 0 ~1 Input.fire 0}
@@ -259,6 +263,7 @@ in
             W = {CheckVal X-1 Y ~1 0 Input.fire 0}
             E = {CheckVal X+1 Y 0 1 Input.fire 0}
             Val = N + S + W + E
+            {Show 'DangerValue found is'#Val}
             Val
          end
    end
@@ -267,8 +272,8 @@ in
    %end
 
    proc{FindMin A B Min Tie}
-      if A == null then
-         if B == null then
+      if A == null orelse A.arg == null then
+         if B == null orelse B.arg == null then
             Min = null
             Tie = true
          else
@@ -276,7 +281,7 @@ in
             Tie = false
          end
       else
-         if B == null then
+         if B == null orelse B.arg == null then
             Min = A
             Tie = false
          elseif B.arg == A.arg then
@@ -296,9 +301,13 @@ in
       N S W E MinX MinY Min Min1 Min2 TieX TieY Tie Tie1 Tie2 in
       if Type == danger then
          N = tile(x:Pos.x y:Pos.y-1 arg:{DangerValue Map Pos.x Pos.y-1})
+         {Show 'N danger value'#N.arg}
          S = tile(x:Pos.x y:Pos.y+1 arg:{DangerValue Map Pos.x Pos.y+1})
+         {Show 'S danger value'#S.arg}
          W = tile(x:Pos.x-1 y:Pos.y arg:{DangerValue Map Pos.x-1 Pos.y})
+         {Show 'W danger value'#W.arg}
          E = tile(x:Pos.x+1 y:Pos.y arg:{DangerValue Map Pos.x+1 Pos.y})
+         {Show 'E danger value'#E.arg}
       /*elseif Type == exit then
          N = tile(x:Pos.x y:Pos.y-1 arg:{ExitValue Pos.x Pos.y-1})
          S = tile(x:Pos.x y:Pos.y+1 arg:{ExitValue Pos.x Pos.y+1})
@@ -308,9 +317,10 @@ in
       {FindMin N S MinY TieY}
       {FindMin W E MinX TieX}
       {FindMin MinY MinX Min Tie}
-      if !Tie then
+      {Show 'MinY:'#MinY#'TieY'#TieY#'MinX:'#MinX#'TieX'#TieX#'Min'#Min#'Tie:'#Tie}
+      if Tie == false then
          if MinX == Min then
-            if TieX then %W E
+            if TieX == true then %W E
                Result = pt(x:W.x y:W.y)#pt(x:E.x y:E.y)
                Nbr = 2
             else %MinX
@@ -318,7 +328,7 @@ in
                Nbr = 1
             end
          else %MinY == Min
-            if TieY then % N S
+            if TieY == true then % N S
                Result = pt(x:N.x y:N.y)#pt(x:S.x y:S.y)
                Nbr = 2
             else %MinY
@@ -327,7 +337,7 @@ in
             end
          end
       else %Tie
-         if TieX andthen TieY then
+         if TieX == true andthen TieY == true then
             if Min == null then %Trapped
                Result = null
                Nbr = 0
@@ -335,8 +345,11 @@ in
                Result = pt(x:N.x y:N.y)#pt(x:S.x y:S.y)#pt(x:W.x y:W.y)#pt(x:E.x y:E.y)
                Nbr = 4
             end
-         elseif !TieX andthen !TieY then
-            if N == MinY then
+         elseif TieX == false andthen TieY == false then %Erreur dans ce if
+            %Correction à vérifier
+            Result = pt(x:MinX.x y:MinX.y)#pt(x:MinY.x y:MinY.y)
+            Nbr = 2
+            /*if N == MinY then
                if W == MinY then %N W
                   Result = pt(x:N.x y:N.y)#pt(x:W.x y:W.y)
                   Nbr = 2
@@ -352,19 +365,19 @@ in
                   Result = pt(x:S.x y:S.y)#pt(x:E.x y:E.y)
                   Nbr = 2
                end
-            end
-         elseif TieX andthen !TieY then
+            end*/
+         elseif TieX == true andthen TieY == false then
             {FindMin MinX N Min1 Tie1}
-            if Tie1 then %W E N
+            if Tie1 == true then %W E N
                Result = pt(x:W.x y:W.y)#pt(x:E.x y:E.y)#pt(x:N.x y:N.y)
                Nbr = 3
             else %W E S
                Result = pt(x:W.x y:W.y)#pt(x:E.x y:E.y)#pt(x:S.x y:S.y)
                Nbr = 3
             end
-         elseif !TieX andthen TieY then
+         elseif TieX == false andthen TieY == true then
             {FindMin MinY W Min2 Tie2}
-            if Tie2 then %N S W
+            if Tie2 == true then %N S W
                Result = pt(x:N.x y:N.y)#pt(x:S.x y:S.y)#pt(x:W.x y:W.y)
                Nbr = 3
             else %N S E
@@ -379,34 +392,25 @@ in
    fun{SafeMove Map Pos}
       NewPos SafeOptions Nbr Rand in
       {Safest Pos Map danger SafeOptions Nbr}
-      if Nbr =< 1 then
-         NewPos = SafeOptions
+      {Show 'SafeMove has received'#Nbr#'safe positions:'#SafeOptions}
+      if Nbr =< 1 then NewPos = SafeOptions
       elseif Nbr == 2 then
-         Rand = ({OS.Rand} mod 2)
-         if Rand == 0 then
-            NewPos = SafeOptions.1
-         else
-            NewPos = SafeOptions.2
+         Rand = ({OS.rand} mod 2)
+         if Rand == 0 then NewPos = SafeOptions.1
+         else NewPos = SafeOptions.2
          end
       elseif Nbr == 3 then
-         Rand = ({OS.Rand} mod 3)
-         if Rand == 0 then
-            NewPos = SafeOptions.1
-         elseif Rand == 1 then
-            NewPos = SafeOptions.2
-         else
-            NewPos = SafeOptions.3
+         Rand = ({OS.rand} mod 3)
+         if Rand == 0 then NewPos = SafeOptions.1
+         elseif Rand == 1 then NewPos = SafeOptions.2
+         else NewPos = SafeOptions.3
          end
       elseif Nbr == 4 then
-         Rand = ({OS.Rand} mod 4)
-         if Rand == 0 then
-            NewPos = SafeOptions.1
-         elseif Rand == 1 then
-            NewPos = SafeOptions.2
-         elseif Rand == 2 then
-            NewPos = SafeOptions.3
-         else
-            NewPos = SafeOptions.4
+         Rand = ({OS.rand} mod 4)
+         if Rand == 0 then NewPos = SafeOptions.1
+         elseif Rand == 1 then NewPos = SafeOptions.2
+         elseif Rand == 2 then NewPos = SafeOptions.3
+         else NewPos = SafeOptions.4
          end
       end
       NewPos
@@ -414,53 +418,68 @@ in
 
    %Action to survive
    proc{DoAction PlayerInfo Action NewPlayerInfo}
+      {Show 'DoAction Player info:'#PlayerInfo}
       if {DangerValue PlayerInfo.map PlayerInfo.currentPos.x PlayerInfo.currentPos.y} > 0 then %Not on a safe tile => move
+         {Show 'DoAction'#PlayerInfo.id.id#'Tile is dangerous'}
          NewPos in
          NewPos = {SafeMove PlayerInfo.map PlayerInfo.currentPos}
          if NewPos \= null then %move to new position (the safest one)
             Action = move(NewPos)
             NewPlayerInfo = PlayerInfo
-         else %Player is trapped, drop a bomb
+            {Show 'DoAction'#PlayerInfo.id.id#'Player has moved to'#NewPos}
+         else %Player is trapped, drop a bomb %Could happend only if player is trapped by boxes and has already dropped a bomb
             if PlayerInfo.bombs > 0 andthen ({CheckTile PlayerInfo.map PlayerInfo.currentPos.x PlayerInfo.currentPos.y} mod OTHER_BOMB) >= MY_BOMB then %There are still bomb left and none of my bombs are on the tile
                Action = bomb(PlayerInfo.currentPos)
                NewPlayerInfo = infos(id: PlayerInfo.id lives:PlayerInfo.lives bombs:(PlayerInfo.bombs-1) score:PlayerInfo.score state:PlayerInfo.state currentPos:PlayerInfo.currentPos initPos:PlayerInfo.initPos map:PlayerInfo.map rivals:PlayerInfo.rivals)
+               {Show 'DoAction'#PlayerInfo.id.id#'Player could not move and has dropped a bomb'}
             else %Player cannot move nor drop a bomb
                Action = null
                NewPlayerInfo = PlayerInfo
             end
          end
       else %Standing on a safe tile, can either drop a bomb or move
+         {Show 'DoAction'#PlayerInfo.id.id#'Tile is safe'}
          Rand in
          Rand = ({OS.rand} mod BOMB_FREQ)
          if Rand == 0 then % chance of 1-(1/BOMB_FREQ) to drop a bomb if possible
             %TODOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO  Check if possible to be safe afterwards
-            if PlayerInfo.bombs > 0 andthen ({CheckTile PlayerInfo.map PlayerInfo.currentPos.x PlayerInfo.currentPos.y} mod OTHER_BOMB) >= MY_BOMB then %There are still bomb left and none of my bombs are on the tile
-            Action = bomb(PlayerInfo.currentPos)
-            NewPlayerInfo = infos(id: PlayerInfo.id lives:PlayerInfo.lives bombs:(PlayerInfo.bombs-1) score:PlayerInfo.score state:PlayerInfo.state currentPos:PlayerInfo.currentPos initPos:PlayerInfo.initPos map:PlayerInfo.map rivals:PlayerInfo.rivals)
+            TileCheck in 
+            TileCheck = ({CheckTile PlayerInfo.map PlayerInfo.currentPos.x PlayerInfo.currentPos.y} mod OTHER_BOMB) =< MY_BOMB
+            {Show 'DoAction'#PlayerInfo.id.id#'Try to drop a bomb:Bomb nbr'#PlayerInfo.bombs#'Tile is'#TileCheck}
+            if PlayerInfo.bombs > 0 andthen ({CheckTile PlayerInfo.map PlayerInfo.currentPos.x PlayerInfo.currentPos.y} mod OTHER_BOMB) =< MY_BOMB then %There are still bomb left and none of my bombs are on the tile
+               Action = bomb(PlayerInfo.currentPos)
+               NewPlayerInfo = infos(id: PlayerInfo.id lives:PlayerInfo.lives bombs:(PlayerInfo.bombs-1) score:PlayerInfo.score state:PlayerInfo.state currentPos:PlayerInfo.currentPos initPos:PlayerInfo.initPos map:PlayerInfo.map rivals:PlayerInfo.rivals)
+               {Show 'DoAction'#PlayerInfo.id.id#'Bomb has been dropped'}
             else %could not drop bomb, try to move
                NewPos in
                NewPos = {SafeMove PlayerInfo.map PlayerInfo.currentPos}
                if NewPos \= null then %move to new position (the safest)
                   Action = move(NewPos)
                   NewPlayerInfo = PlayerInfo
+                  {Show 'DoAction'#PlayerInfo.id.id#'Player has moved to'#NewPos}
                else
                   Action = null
                   NewPlayerInfo = PlayerInfo
+                  {Show 'DoAction'#PlayerInfo.id.id#'Player could do no action'}
                end
             end
          else % chance of 1-(1/BOMB_FREQ) to move if possible
+            {Show 'DoAction'#PlayerInfo.id.id#'Try to move'}
             NewPos in
             NewPos = {SafeMove PlayerInfo.map PlayerInfo.currentPos}
             if NewPos \= null then %move to new position (the safest)
                Action = move(NewPos)
                NewPlayerInfo = PlayerInfo
+               {Show 'DoAction'#PlayerInfo.id.id#'Player has moved to'#NewPos}
             else %drop a bomb if possible
                if PlayerInfo.bombs > 0 andthen ({CheckTile PlayerInfo.map PlayerInfo.currentPos.x PlayerInfo.currentPos.y} mod OTHER_BOMB) >= MY_BOMB then %There are still bomb left and none of my bombs are on the tile
                   Action = bomb(PlayerInfo.currentPos)
                   NewPlayerInfo = infos(id: PlayerInfo.id lives:PlayerInfo.lives bombs:(PlayerInfo.bombs-1) score:PlayerInfo.score state:PlayerInfo.state currentPos:PlayerInfo.currentPos initPos:PlayerInfo.initPos map:PlayerInfo.map rivals:PlayerInfo.rivals)
+                  {Show 'DoAction'#PlayerInfo.id.id#'Player could not move and has dropped a bomb'}
                else %Player cannot move nor drop a bomb
                   Action = null
                   NewPlayerInfo = PlayerInfo
+                  {Show 'DoAction'#PlayerInfo.id.id#'Player could do no action'}
                end
             end
          end
@@ -541,7 +560,7 @@ in
          in
             NewMap = {UpdateMap PlayerInfo.map Pos.x Pos.y CurrentVal+10}
             if ID == PlayerInfo.id then %Info about itself, update of map only
-               NewPlayerInfo = infos(id:PlayerInfo.id lives:PlayerInfo.lives bombs:PlayerInfo.bombs score:PlayerInfo.score state:PlayerInfo.state currentPos:Pos initPos:PlayerInfo.initPos map:NewMap rivals:PlayerInfo.rivals)
+               NewPlayerInfo = infos(id:PlayerInfo.id lives:PlayerInfo.lives bombs:PlayerInfo.bombs score:PlayerInfo.score state:on currentPos:Pos initPos:PlayerInfo.initPos map:NewMap rivals:PlayerInfo.rivals)
             else %Info about a rival, update of map and rivals states
                   NewRivalState
                in
@@ -574,12 +593,12 @@ in
          NewMap NewPlayerInfo in
          if ID == PlayerInfo.id then
             NewMap = {RemovePlayer PlayerInfo.map PlayerInfo.currentPos.x PlayerInfo.currentPos.y}
-            NewPlayerInfo = infos(id:PlayerInfo.id lives:0 bombs:PlayerInfo.bombs score:PlayerInfo.score state:off currentPos:null initPos:PlayerInfo.initPos map:NewMap rivals:PlayerInfo.rivals)
+            NewPlayerInfo = infos(id:PlayerInfo.id lives:(PlayerInfo.lives-1) bombs:PlayerInfo.bombs score:PlayerInfo.score state:off currentPos:PlayerInfo.initPos initPos:PlayerInfo.initPos map:NewMap rivals:PlayerInfo.rivals)
          else
             Rival NewRivalState in
             Rival = {GetRivalByID PlayerInfo.rivals ID}
             if Rival == null orelse Rival.pos == null then %Problem, rival was not register on our list or was marked off board, shouldn't happen
-               {Show2 'Error: Rival'#ID#'has died and was not on our rival list or was considered of the board'}
+               {Show 'Error: Rival'#ID#'has died and was not on our rival list or was considered of the board'}
                NewMap = PlayerInfo.map
             else
                NewMap = {RemovePlayer PlayerInfo.map Rival.pos.x Rival.pos.y} % Remove rival ID from old position
@@ -589,7 +608,7 @@ in
          end
          NewPlayerInfo
       []bombPlanted(Pos) then
-         {Show2 'Message bombPlanted has been used'}
+         {Show 'Message bombPlanted has been used'}
          PlayerInfo
       []spawnBomb(Pos) then
             CurrentVal = {CheckTile PlayerInfo.map Pos.x Pos.y}
@@ -645,7 +664,7 @@ in
             {Show 'TreatStream'#PlayerInfo.id.id#'spawn'}
             if PlayerInfo.state == off andthen PlayerInfo.lives > 0 then %Player could spawn, update of its state
                NewPlayerInfo in
-               NewPlayerInfo = infos(id: PlayerInfo.id lives:PlayerInfo.lives bombs:PlayerInfo.bombs score: PlayerInfo.score state:on currentPos:PlayerInfo.initPos initPos:PlayerInfo.initPos map:PlayerInfo.map rivals:PlayerInfo.rivals)
+               NewPlayerInfo = infos(id: PlayerInfo.id lives:PlayerInfo.lives bombs:PlayerInfo.bombs score:PlayerInfo.score state:on currentPos:PlayerInfo.initPos initPos:PlayerInfo.initPos map:PlayerInfo.map rivals:PlayerInfo.rivals)
                BomberID = PlayerInfo.id
                BomberPos = PlayerInfo.initPos
                {TreatStream Tail NewPlayerInfo}
@@ -655,18 +674,14 @@ in
                {TreatStream Tail PlayerInfo}
             end            
          []doaction(BomberID BomberAction) then
-            local
-               NewPlayerInfo
-            in
-               {Show 'TreatStream - Asked to do action'}
-               {DoAction PlayerInfo BomberAction NewPlayerInfo}
-               if BomberAction == null then %The player is off the board or could neither move nor drop a bomb, no action could be done
-                  BomberID = null
-               else
-                  BomberID = NewPlayerInfo.id
-               end
-               {TreatStream Tail NewPlayerInfo}
+            NewPlayerInfo in
+            {DoAction PlayerInfo BomberAction NewPlayerInfo}
+            if BomberAction == null then %The player is off the board or could neither move nor drop a bomb, no action could be done
+               BomberID = null
+            else
+               BomberID = NewPlayerInfo.id
             end
+            {TreatStream Tail NewPlayerInfo}
          []add(Type Option BomberResult) then
             local
                NewPlayerInfo
@@ -679,17 +694,15 @@ in
             if PlayerInfo.state == off then %The player is already off the board
                BomberResult = null
                {TreatStream Tail PlayerInfo}
-            else %The player is on the board and needs to decrease its life by one %TODOOOOOOOOOOOOOOO Change that to update at the reception of the deadplayer(ID) message
-               NewPlayerInfo in
-               NewPlayerInfo = infos(id: PlayerInfo.id lives:(PlayerInfo.lives-1) bombs:PlayerInfo.bombs score: PlayerInfo.score state:off currentPos:PlayerInfo.currentPos initPos:PlayerInfo.initPos map:PlayerInfo.map rivals:PlayerInfo.rivals)
+            else %The player is on the board and return its new life number
+               {Show2 'BomberSurvivor'#PlayerInfo.id.id#'got hit and has now'#PlayerInfo.lives-1#'lives left'}
                BomberResult = death(PlayerInfo.lives-1)
-               {TreatStream Tail NewPlayerInfo}
+               {TreatStream Tail PlayerInfo}
             end
          []info(M) then
-               NewPlayerInfo
-            in
-               NewPlayerInfo = {ManageInfo M PlayerInfo}
-               {TreatStream Tail NewPlayerInfo}
+            NewPlayerInfo in
+            NewPlayerInfo = {ManageInfo M PlayerInfo}
+            {TreatStream Tail NewPlayerInfo}
          end
       end
    end
