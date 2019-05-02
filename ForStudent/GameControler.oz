@@ -327,7 +327,7 @@ define
 
     fun{CheckHitBomber PlayersList PointInFire BombersHited BombersNOThited}
         case PlayersList 
-        of nil then rec(bomersHited:BombersHited  bombersNothited:BombersNOThited ) 
+        of nil then rec(bomersHited:BombersHited  bombersNothited:BombersNOThited)
         [] Bomber|T then 
              if (Bomber.currentPosition == PointInFire) then 
                 {CheckHitBomber T PointInFire {Append BombersHited [Bomber]} BombersNOThited}  

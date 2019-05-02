@@ -38,9 +38,9 @@ in
 
 %%%% Style of game %%%%
    
-   IsTurnByTurn = false
+   IsTurnByTurn =false
    UseExtention = false
-   PrintOK = true  
+   PrintOK = false
 
 
 %%%% Description of the map %%%%
@@ -162,14 +162,19 @@ in
 
 %%%% Players description %%%%
 
-   NbBombers = 6
-   Bombers = [player000basic player000basic player000basic player000basic player000basic player000bomber]
-   ColorBombers = [yellow red blue green white black]
+   NbBombers = 2
+   Bombers = [player001name player001name]
+   ColorBombers = [blue red]
+   %player000simultaneous
+   %player000survivor
+   %player003John
+   %random
+   %player001name
 
 %%%% Parameters %%%%
 
-   NbLives = 1
-   NbBombs = 10
+   NbLives = 5
+   NbBombs = 2
  
    ThinkMin = 50  % in millisecond
    ThinkMax = 200 % in millisecond
