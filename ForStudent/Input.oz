@@ -163,7 +163,7 @@ in
 %%%% Players description %%%%
 
    NbBombers = 6
-   Bombers = [player000bomber player000name player000name player000name player000name player000name]
+   Bombers = [player000basic player000basic player000basic player000basic player000basic player000bomber]
    ColorBombers = [yellow red blue green white black]
 
 %%%% Parameters %%%%

@@ -14,6 +14,8 @@ compile :
 	@ozc -c *.oz
 gameC : 
 	@ozc -c GameControler.oz
+gameCB : 
+	@ozc -c GameControlerBomber.oz
 gameM : 
 	@ozc -c Main.oz
 gameI : 
@@ -22,8 +24,10 @@ basic :
 	@ozc -c Player000basic.oz
 simultaneous :
 	@ozc -c Player000simultaneous.oz
+smart :
+	@ozc -c Player000extension.oz
 run :
 	@ozengine Main.ozf
 
 clean :
-	@rm -rf GUI.ozf Input.ozf Main.ozf PlayerManager.ozf GameControler.ozf Player000basic.ozf Player000simultaneous.ozf
+	@rm -rf GUI.ozf Input.ozf Main.ozf PlayerManager.ozf GameControler.ozf Player000basic.ozf Player000simultaneous.ozf Player000extension.ozf GameControlerBomber.ozf
