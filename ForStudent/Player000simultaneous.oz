@@ -14,7 +14,6 @@ define
    MoveRandom
    DoAction
    AddObject
-   %TakeHit
    ManageInfo
    GetRivalByID
    AddPlayer
@@ -33,7 +32,7 @@ define
    %The values can be added. The different type informations are held in different power of 10 to be able to retrieve the information with the operation 'mod'
 
    %Control the frequence at which bombs are droped, frequency is 1/BOMB_FREQ
-   BOMB_FREQ = 10
+   BOMB_FREQ = 5
 
    % Debug
    Show Show2
@@ -303,10 +302,11 @@ in
             end
                NewPlayerInfo
       []deadPlayer(ID) then
+         {Show 'ManageInfo'#PlayerInfo.id.id#' deadPlayer('#ID#')'}
          NewMap NewPlayerInfo in
          if ID == PlayerInfo.id then
             NewMap = {RemovePlayer PlayerInfo.map PlayerInfo.currentPos.x PlayerInfo.currentPos.y}
-            NewPlayerInfo = infos(id:PlayerInfo.id lives:0 bombs:PlayerInfo.bombs score:PlayerInfo.score state:off currentPos:null initPos:PlayerInfo.initPos map:NewMap rivals:PlayerInfo.rivals)
+            NewPlayerInfo = infos(id:PlayerInfo.id lives:(PlayerInfo.lives-1) bombs:PlayerInfo.bombs score:PlayerInfo.score state:off currentPos:PlayerInfo.initPos initPos:PlayerInfo.initPos map:NewMap rivals:PlayerInfo.rivals)
          else
             Rival NewRivalState in
             Rival = {GetRivalByID PlayerInfo.rivals ID}
@@ -336,7 +336,7 @@ in
          in 
             if(CurrentVal mod OTHER_BOMB) < 10 then %There was only my bombs on the tile
                NewMap = {UpdateMap PlayerInfo.map Pos.x Pos.y CurrentVal - MY_BOMB}
-            else %There is at least another bomb than mine on the tile. Assume it was someone else's that exploded (safer to resoect rules of the game)
+            else %There is at least another bomb than mine on the tile. Assume it was someone else's that exploded (safer to respect rules of the game)
                NewMap = {UpdateMap PlayerInfo.map Pos.x Pos.y CurrentVal - OTHER_BOMB}
             end
             NewPlayerInfo = infos(id:PlayerInfo.id lives:PlayerInfo.lives bombs:PlayerInfo.bombs score:PlayerInfo.score state:PlayerInfo.state currentPos:PlayerInfo.currentPos initPos:PlayerInfo.initPos map:NewMap rivals:PlayerInfo.rivals)
@@ -382,6 +382,7 @@ in
                BomberPos = PlayerInfo.initPos
                {TreatStream Tail NewPlayerInfo}
             else %Player could not spawn
+               {Show 'TreatStream'#PlayerInfo.id.id#'Player could not spawn. Player ID returned == null'}
                BomberID = null
                BomberPos = null
                {TreatStream Tail PlayerInfo}
@@ -393,6 +394,7 @@ in
                {Show 'TreatStream - Asked to do action'}
                {DoAction PlayerInfo BomberAction NewPlayerInfo}
                if BomberAction == null then %The player is off the board and no action could be done
+                  {Show 'TreatStream'#PlayerInfo.id.id#'Player could not do an action. Player ID returned == null'}
                   BomberID = null
                else
                   BomberID = NewPlayerInfo.id
@@ -412,10 +414,11 @@ in
                BomberResult = null
                {TreatStream Tail PlayerInfo}
             else %The player is on the board and needs to decrease its life by one %TODOOOOOOOOOOOOOOO Change that to update at the reception of the deadplayer(ID) message
-               NewPlayerInfo in
-               NewPlayerInfo = infos(id: PlayerInfo.id lives:(PlayerInfo.lives-1) bombs:PlayerInfo.bombs score: PlayerInfo.score state:off currentPos:PlayerInfo.currentPos initPos:PlayerInfo.initPos map:PlayerInfo.map rivals:PlayerInfo.rivals)
+               %NewPlayerInfo in
+               %NewPlayerInfo = infos(id: PlayerInfo.id lives:(PlayerInfo.lives-1) bombs:PlayerInfo.bombs score: PlayerInfo.score state:off currentPos:PlayerInfo.currentPos initPos:PlayerInfo.initPos map:PlayerInfo.map rivals:PlayerInfo.rivals)
                BomberResult = death(PlayerInfo.lives-1)
-               {TreatStream Tail NewPlayerInfo}
+               %{TreatStream Tail NewPlayerInfo}
+               {TreatStream Tail PlayerInfo}
             end
          []info(M) then
                NewPlayerInfo
