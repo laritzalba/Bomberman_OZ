@@ -14,6 +14,10 @@ compilePlayers:
 
 GameControler.ozf : 
 	@ozc -c GameControler.oz
+gameCB : 
+	@ozc -c GameControlerBomber.oz
+gameM :
+	@ozc -c Main.oz 
 PlayerManager.ozf :
 	@ozc -c PlayerManager.oz
 GUI.ozf :
@@ -26,6 +30,8 @@ Player000basic.ozf :
 	@ozc -c Player000basic.oz
 Player000simultaneous.ozf :
 	@ozc -c Player000simultaneous.oz
+smart :
+	@ozc -c Player000extension.oz
 Player000survivor.ozf:
 	@ozc -c Player000survivor.oz
 Player000extension.ozf:
@@ -35,4 +41,4 @@ run :
 	@ozengine Main.ozf
 
 clean :
-	@rm -rf GUI.ozf Input.ozf Main.ozf PlayerManager.ozf GameControler.ozf Player000basic.ozf Player000simultaneous.ozf Player000survivor.ozf Player000extension.ozf
+	@rm -rf GUI.ozf Input.ozf Main.ozf PlayerManager.ozf GameControler.ozf Player000basic.ozf Player000simultaneous.ozf Player000survivor.ozf Player000extension.ozf Player000extension.ozf GameControlerBomber.ozf

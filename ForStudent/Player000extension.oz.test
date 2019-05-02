@@ -5,6 +5,7 @@ import
    Projet2019util
    OS
    System
+   GameControler
 export
    portPlayer:StartPlayer
 define   
@@ -39,7 +40,6 @@ define
    Show Show2
    LocalDebug= true
    LocalDebug2= true
-in
 %%% TOOLS %%%%
   proc {Show Msg} %Used for info messages (in this file)
     if (LocalDebug == true) then {System.show Msg}
@@ -52,22 +52,7 @@ in
   end
  %%% END TOOLS %%%%
 
-   fun{StartPlayer ID}
-      local
-         Stream Port OutputStream PlayerInfo Rivals
-      in
-         Rivals = nil
-         PlayerInfo = infos(id:ID lives:Input.nbLives bombs:Input.nbBombs score: 0 state:off currentPos:null initPos:null map:Input.map rivals:Rivals)
-         thread %% filter to test validity of message sent to the player
-            OutputStream = {Projet2019util.portPlayerChecker Name ID Stream}
-         end
-         {NewPort Stream Port}
-         thread
-            {TreatStream OutputStream PlayerInfo}
-         end
-         Port
-      end
-   end
+   
 
    %%%%%%%%%%%%%%%%%%%Functions and procedures usefull for TreatStream
    /* 
@@ -355,7 +340,27 @@ in
    end
    
    %%%%%%%%%%%%%%%%Treatmen and handling of received messages
-
+in 
+   fun{StartPlayer ID}
+      local
+         Stream Port OutputStream PlayerInfo Rivals
+      in
+         Rivals = nil
+         PlayerInfo = infos(id:ID lives:Input.nbLives bombs:Input.nbBombs score: 0 state:off currentPos:null initPos:null map:Input.map rivals:Rivals)
+        
+         
+         thread %% filter to test validity of message sent to the player
+            OutputStream = {Projet2019util.portPlayerChecker Name ID Stream}
+         end
+         {NewPort Stream Port}
+         thread
+            {TreatStream OutputStream PlayerInfo}
+         end
+         Port
+      end
+   end
+   
+   
    proc{TreatStream Stream PlayerInfo} %% TODO you may add some arguments if needed
      case Stream of nil then skip
      []Head|Tail then
@@ -426,9 +431,181 @@ in
       end
    end
 
-  
+
+fun{InitPlayersForSimulation GameState}
+  {CreatePortBomberAndExtend BombersList Count}
+end
+
+fun{CreateBombers PlayerList}
+  ExtendedPortBombers= {CreatePortBomberAndExtend Input.bombers 1} 
+end 
+
+
+   fun {CreateBomberAndExtend BombersList Count}
+      case BombersList 
+        of nil then nil 
+        [] H|T then 
+          local ExtendedBomber Strem Port in 
+            {NewPort Stream Port}           
+            ExtendedBomber = extendedBomber(mybomberPort:Port 
+                                            currentPosition:_ 
+                                            score:0
+                                            isOnBoard:true
+                                            localID: Count
+                                            ID:bomber(id:Count color:red name:{RandName Count}
+                                            )
+            ExtendedBomber|{CreatePortBomberAndExtend T Count+1}
+          end
+      end
+   end
+
+
+fun {CloningGamestate GameState} 
+
+end 
+
+ fun{AdmisiblesActions GameState}
+ 
+ end
+
+ fun {ArgMax ListScore Max I N}
+     case ListScore
+     of nil then I
+     [] H|T then
+         if (H > Max) then 
+            {ArgMax ListScore H N N+1}
+         else 
+            {ArgMax ListScore Max I N+1}
+         end 
+     end 
+ end 
+ 
+fun{ChoosNextPlayer PlayersList OriginalList CurrentPlayer LengthList Count}
+    case PlayersList 
+    of nil then nil 
+    [] H|T then
+      if (CurrentPlayer.localID == H.localID) then 
+         if {LengthList == Count} then OriginalList.1 % choose first il list 
+         else 
+            T.1 % choose next 
+         end  
+      else
+       {ChoosNextPlayer T OriginalList CurrentPlayer Count+1}
+      end 
+    end  
+end
+
+ fun{FunctEvaluation AbstractGameState ThisPlayer}
+    % if more than half of point return 1 
+ 
+ end 
+
+
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ % OzMinMAx
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  fun{AbstractGameState Action GameState ThisPlayer}
+   GameState1 FinalGamestate 
+  in
+      GameState1= {GameControler.updateBombGamestate GameState}
+      % return a  Message Record with actions rec(1:State 2:Broadcast 3:Wind)
+      Rec = {GameControler.playOnce GameState1 ThisPlayer Action ThisPlayer.localID}
+      {GameControler.treatStream Rec.1 GameState FinalGamestate}
+  end 
 
 
 
+   fun{GetScore  ListActions GameState Lebel MaxLebel TMax ThisPlayer Score}
+     case ListActions
+     of nil then Score 
+     [] Action |T then CurrentScore in 
+       CurrentGamestate= {AbstractGameState Action GameState ThisPlayer}
+       ScoreFctEval= {FunctEvaluation AbstractGameState ThisPlayer}
+       LengthList = {Lenght GameState.playersList}
+       NextPlayer= {ChoosNextPlayer GameState.playersList GameState.playersList ThisPlayer LengthList 1}
+       
+       CurrentScore =  (Score + ({Thinking CuerrentGamestate Lebel+1  MaxLebel TMax NextPlayer ScoreFctEval} * ~1 )  
+       CurrentScore|{GetScore T CurrentGamestate Lebel MaxLebel TMax ThisPlayer  CurrentScore}    
+     end 
+   end 
 
+
+  fun{Thinking GameState Lebel MaxLebel TMax ThisPlayer Score}
+     SimulatedState
+  in
+      if(TMax == unit) then  Score %exit
+      elseif (Score== 1 ) then Score % exit  near to 1
+      elseif (Lebel == MaxLebel) then Score %exit 
+      elseif (ThisPlayer == nil ) then Score % exit 
+      else ListActions ListScore IndexWithBestScore in
+          ListActions = {AdmisiblesActions GameState}         
+          ListScore = {GetScore ListActions GameState Lebel MaxLebel TMax ThisPlayer ListScore Score}           
+          IndexWithBestScore = {ArgMax ListScore.2 ListScore.1 1}
+          ActionToDo= {Nth ListActions IndexWithBestScore}        
+      end % end first if 
+  end 
+
+  fun{PlayDoAction ID Action GameState}
+   TMax Lebel MaxLebel ThisPlayer Score GameStateClon
+  in          
+    Lebel = 1 
+    MaxLebel= 3
+    Score = 0
+    {Time.alarm Input.thinkMin TMax}
+    GameStateClon = {CloningGamestate GameState} 
+    ThisPlayer = 
+    {Thinking GameStateClon Lebel MaxLebel TMax ThisPlayer Score}
+
+   end
+
+   
 end %End Module
+
+/*
+
+
+ Step to do in thinking 
+
+
+
+   fun{Test List Score}
+      case List
+      of nil then nil 
+      []H|T then
+	 Score * {Think Time Score}|{Test T 2}
+      end
+   end
+   
+   
+   fun {ArgMax ListScore Max I N}
+      case ListScore
+       of nil then I
+	[] H|T then
+	 if (H > Max) then 
+            {ArgMax ListScore H N N+1}
+	 else 
+	    {ArgMax ListScore Max I N+1}
+	  end 
+      end 
+   end 
+   
+   fun{Think Time Score}
+      if (Time == unit ) then Score
+      else ListScore ActionToDo  IndexWithBestScore ListAction in
+	 ListAction = [1 2 3 4]
+	 ListScore = {Test ListAction Score}
+	 IndexWithBestScore = {ArgMax ListScore.2 ListScore.1 1 1}
+	 ActionToDo= {Nth ListAction IndexWithBestScore}
+	 ActionToDo
+      end 
+   end 
+   
+   
+in
+    {Time.alarm 200 T}
+    {Show5 'helo'#{Think T 5}}  
+    {Show5 'end'}
+
+
+
+*/

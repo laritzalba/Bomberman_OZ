@@ -81,7 +81,7 @@ define
    LocalDebug4= false
    LocalDebug5= false
    LocalDebug6 = false 
-   LocalDebug7 = true
+   LocalDebug7 = false 
 
  %%% TOOLS %%%%
   proc {Show Msg}
@@ -155,27 +155,26 @@ define
          )  
   end
   
-   fun {CreatePortBomberAndExtend BombersList Count}
+    fun {CreateBomberAndExtend BombersList Count}
       case BombersList 
         of nil then nil 
-        [] H|T then 
-          local MyBomber ExtendedBomber in 
-            MyBomber = {PlayerManager.playerGenerator {Nth Input.bombers Count} 
-                              bomber(id:Count 
-                                     color:{Nth Input.colorsBombers Count} 
-                                     name:{RandName Count})
-                           }            
-            ExtendedBomber = extendedBomber(mybomberPort:MyBomber 
+        [] H|T then Id ExtendedBomber in 
+            Id= bomber(id:Count color:red name:{RandName Count}   
+            ExtendedBomber = extendedBomber(mybomberPort:Id
                                             currentPosition:_ 
                                             score:0
-                                            isOnBoard:true
                                             localID: Count
+                                            ID:id
+                                            lives:Input.nbLives
+                                            bombs:Input.nbBombs
+                                            state:on
+                                            initPos:_
+                                            rivals:nil
                                             )
             ExtendedBomber|{CreatePortBomberAndExtend T Count+1}
           end
       end
-   end
-   
+   end   
 
  fun{RandName Count}
    'bomberman'#Count
@@ -273,6 +272,46 @@ define
      end  
    end 
 
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  % Update Bombs
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+/*
+         ExtendedBomber = extendedBomber(mybomberPort:Id
+                                            currentPosition:_ 
+                                            score:0
+                                            localID: Count
+                                            ID:id
+                                            lives:Input.nbLives
+                                            bombs:Input.nbBombs
+                                            state:on
+                                            initPos:_
+                                            rivals:nil
+                                            )
+  
+  
+  */
+
+   % deadPlayer(ID)
+   fun{DeadPlayer ID }
+      ExtendedBomber Result
+   in 
+     ExtendedBomber = {FindBomber List ID}
+     if (ExtendedBomber.state == on ) then 
+        NewLife = ExtendedBomber.lives-1
+        if (NewLife == 0) then 
+            UpdateExtenderBomber = {Adjoin ExtendedBomber extendedBomber(lives:NewLife state:off)}
+            Result = death(NewLife)
+            Result 
+        else
+           
+        end 
+    else 
+      Result = death(NewLife) 
+      Result
+    end 
+   
+   end 
 
    fun{CheckDamage GameState ListHitedBombers BombersNOThited PointInFire}
 
@@ -281,10 +320,8 @@ define
             of nil then rec( dead:Dead alive:Alive messageList:MessageList windowsList:WindowsList)
             [] BomberHited|T then
                 ID Result ID2 Pos Wind in
-                {Send BomberHited.mybomberPort gotHit(ID Result)}
-                {Wait ID}
-                {Wait Result}
-                {BroadcastMessage GameState.playersList [deadPlayer(ID)]}
+                ID= BomberHited.ID
+                Result = {DeadPlayer ID}
                 Wind = {Append WindowsList [hidePlayer(ID)]}
                 case Result 
                 of death(NewLife) then
@@ -302,7 +339,7 @@ define
                         {Wait ID2}
                         {Wait Pos}
                         {LoopToCheckDamage T 
-                            {Append MessageList [spawnPlayer(ID2 Pos)]}
+                            {Append MessageList [deadPlayer(ID2) spawnPlayer(ID2 Pos)]}
                             % respaw in the next round Atttention change
                             {Append WindowsList [hidePlayer(ID) lifeUpdate(ID2 NewLife) spawnPlayer(ID2 Pos)]}
                             Dead
@@ -458,7 +495,7 @@ fun{ExploseListPoints GameState ListPointToExplose Bomb}
     {Adjoin GameState gameState(actionToShow:{Append GameState.actionToShow ListMessage})}
     end
 
-
+   %  bomb(extendedBomber:ExtendedBomber bombpos:Position timingBomb:Input.timingBomb)
 
     fun{KaBoom Bomb GameState}    
       % no update bomblist here
@@ -467,9 +504,7 @@ fun{ExploseListPoints GameState ListPointToExplose Bomb}
       ListPointToExplose = {CreateListeToExplose Bomb.bombpos GameState}      
       NewGamestate1= {Adjoin GameState gameState(actionToShow:{Append GameState.actionToShow [hideBomb(Bomb.bombpos)]})}
       NewGameState2= {ExploseListPoints NewGamestate1 ListPointToExplose Bomb}
-      {Send Bomb.extendedBomber.mybomberPort add(bomb 1 Result)}
-      {Wait Result}
-      %{Delay 700} % ???
+      {Add GameState bomb 1 Result Bomb.extendedBomber Bomb.position} 
       {HidePointInFire NewGameState2 ListPointToExplose}
     end
 
@@ -524,36 +559,19 @@ fun{ExploseListPoints GameState ListPointToExplose Bomb}
         end       
     end
 
-/*
-     fun{UpdateBomb GameState}
-        fun {Helper_UpdateBomb GameState ListBomb UpdatedListBomb}
-            case ListBomb
-            of nil then rec(lb:UpdatedListBomb gs:GameState)
-            [] Bomb|T then  NewtimingBomb in 
-                NewtimingBomb = Bomb.timingBomb -1 
-                {Show5 'Bomb Timing ' # NewtimingBomb # Bomb.bombpos}  
-                if NewtimingBomb == 0 then  % explode 
-                     {Show5 'Go to explose ************\n'#GameState.bombList}                      
-                    {Helper_UpdateBomb {KaBoom Bomb GameState} T {List.subtract UpdatedListBomb Bomb}} 
-                else  
-                    %  continue to check bombTimer
-                    NewtimingBomb= (Bomb.timingBomb-1)
-                    {Helper_UpdateBomb GameState T {Append UpdatedListBomb [{Adjoin Bomb bomb(timingBomb:NewtimingBomb)}]}}
-                end
-            end      
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  % DoAction 
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    fun {FindBomber List ID}
+        case List 
+        of nil then nil
+        []H|T then 
+            if (H.mybomberPort == ID) then H
+            else {FindBomber T ID}
+            end
         end
-    in % if there are not bombs I dont need to update state because nothing happend 
-        if GameState.bombList == nil then GameState
-        else Rec in 
-            Rec= {Helper_UpdateBomb GameState GameState.bombList nil}
-            {Adjoin Rec.gs gameState(bombList:Rec.lb)} 
-        end       
-    end
+    end 
 
- */
-  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  % Update Gamestate
-  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
    % updateBomberManState(ExtendedBomber UpdateExtenderBombers)
     fun{UpdateBomberManState GameState ExtendedBomber UpdateExtenderBomber}    
@@ -576,29 +594,33 @@ fun{ExploseListPoints GameState ListPointToExplose Bomb}
      {Adjoin GameState gameState(bombList: {Append GameState.bombList [{CreateBomb Pos ExtendedBomber}]})}
     end 
     
-    %  movePlayer(ID Pos)
-   fun {MovePlayer GameState Pos ExtendedBomber}
-      UpdateExtenderBomber  
-   in 
-      UpdateExtenderBomber = {Adjoin ExtendedBomber extendedBomber(currentPosition:Pos)}
-      {Adjoin GameState gameState(playersList:{Replace GameState.playersList ExtendedBomber UpdateExtenderBomber})}
-   end 
+  %  movePlayer(ID Pos) 
+   fun{MovePlayer ID Pos}
+     ExtendedBomber in 
+     ExtendedBomber = {FindBomber List ID}
+     UpdateExtenderBomber = {Adjoin ExtendedBomber extendedBomber(currentPosition:Pos)}
+    {Adjoin GameState gameState(playersList:{Replace GameState.playersList ExtendedBomber UpdateExtenderBomber})}
 
+   end 
    % add(Type Option ?Result)
-    fun{Add GameState Type Option Result ExtendedBomber Pos} 
-      {Send ExtendedBomber.mybomberPort add(Type Option Result)}
-      {Wait Result}
+  fun{Add GameState Type Option Result ExtendedBomber Pos} 
       case Type 
-      of point then UpdateExtenderBomber in 
+      of point then UpdateExtenderBomber in
+         Result = ExtendedBomber.score+Option
          UpdateExtenderBomber = {Adjoin ExtendedBomber extendedBomber(score:Result)}
           
          {Adjoin GameState gameState(unveiledPoint: {List.subtract GameState.unveiledPoint Pos}
                                      playersList:{Replace GameState.playersList ExtendedBomber UpdateExtenderBomber})}
-      [] bomb then 
-         {Adjoin GameState gameState(unveiledBonus: {List.subtract GameState.unveiledBonus Pos})}
+      [] bomb then
+          Result = ExtendedBomber.bombs+Option
+          UpdateExtenderBomber = {Adjoin ExtendedBomber extendedBomber(bombs:Result)} 
+         {Adjoin GameState gameState(unveiledBonus: {List.subtract GameState.unveiledBonus Pos}
+                                     playersList:{Replace GameState.playersList ExtendedBomber UpdateExtenderBomber})})}
       end      
    end 
 
+
+  
   
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   %  End Update Gamestate 
@@ -624,7 +646,7 @@ fun{ExploseListPoints GameState ListPointToExplose Bomb}
                 
                     %there are a point in this position
                     Result in
-                    State = [movePlayer(ID Pos ExtendedBomber) hidePoint(Pos) add(point 1 Result ExtendedBomber Pos)]
+                    State = [movePlayer(ExtenderBomber.ID Pos) hidePoint(Pos) add(point 1 Result ExtendedBomber Pos)]
                     Broadcast= [movePlayer(ID Pos)]
                     Wind = [movePlayer(ID Pos) hidePoint(Pos) scoreUpdate(ID Result)]
 
@@ -636,20 +658,20 @@ fun{ExploseListPoints GameState ListPointToExplose Bomb}
                     Bonus ={CreateBonus GameState}
                         if (Bonus == GameState.pointBonus) then 
                         % add BonusPoint
-                            State = [movePlayer(ID Pos ExtendedBomber) hideBonus(Pos) add(point Bonus Result ExtendedBomber Pos)]
+                            State = [movePlayer(ExtenderBomber.ID  Pos) hideBonus(Pos) add(point Bonus Result ExtendedBomber Pos)]
                             Broadcast= [movePlayer(ID Pos)]
                             Wind = [movePlayer(ID Pos) hideBonus(Pos) scoreUpdate(ID Result)]
 
                             rec(1:State 2:Broadcast 3:Wind)
                         else % add BonusBomb                                          
-                            State = [movePlayer(ID Pos ExtendedBomber) hideBonus(Pos) add(bomb 1 Result ExtendedBomber Pos)] 
+                            State = [movePlayer(ExtenderBomber.ID Pos) hideBonus(Pos) add(bomb 1 Result ExtendedBomber Pos)] 
                             Broadcast= [movePlayer(ID Pos)]
                             Wind = [movePlayer(ID Pos) hideBonus(Pos)]
 
                             rec(1:State 2:Broadcast 3:Wind)
                         end 
                 else %there are a nothing in this position                  
-                   State = [movePlayer(ID Pos ExtendedBomber)]
+                   State = [movePlayer(ExtenderBomber.ID  Pos)]
                    Broadcast= [movePlayer(ID Pos)]
                    Wind = [movePlayer(ID Pos)]                     
                    rec(1:State 2:Broadcast 3:Wind)                  
@@ -745,9 +767,7 @@ fun{ExploseListPoints GameState ListPointToExplose Bomb}
     in 
        {Show 'Got Winner 1'}
         WinnerList = {GetWinner GameState} 
-         {Show7 ' &&&&&&&&&&&&&& **************Got Winner &&&&&&&&&&&*************'}
-        {Show7 ' &&&&&&&&&&&&&& **************Got Winner 2'# WinnerList # {List.is WinnerList}}
-         {Show7 ' &&&&&&&&&&&&&& **************Got Winner &&&&&&&&&&&*************'}
+        {Show2 'Got Winner 2'# WinnerList # {List.is WinnerList}}
         Message= {AddWinnerMessage WinnerList}
         {Show 'winner message '#Message}
         NewGameState= {Adjoin GameState gameState(

@@ -51,7 +51,6 @@ define
    Simultaneous
    LoopSimulataneous
    CreateThread*/
-  
 
 
   %%% TOOLS %%%%
@@ -299,11 +298,11 @@ end
             {GetSecondDecision PortGameState} %% attention if time of thinking expire what to do ?
             % I'm in GameState only for me
              {Show5 'esperando YYYYYYYYYY222222222'}
-            {Send PortGameState isGameOver(IsEnded)}
+             {Send PortGameState isGameOver(IsEnded)}
             {Wait IsEnded}    
             {Show5 'esperando YYYYYYYYYY4444444444444'}
             if (IsEnded) then 
-               {Send PortGameState freeGameState()}
+               %{Send PortGameState freeGameState()}
                skip
             else AmIDead in
                 {Show5 'BOMBERMAN  (((((((((((((((()))))))))))))'# Bomberman}
@@ -440,6 +439,7 @@ end
    else 
       {Simultaneous}
    end
+
  
 end
 
