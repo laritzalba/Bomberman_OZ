@@ -4,30 +4,41 @@
 # noma2 : 78531500 Magali Legast
 # ----------------------------
 
-# TODO complete the header with your group number, your noma's and full names
+all :compile Input.ozf run
 
-# TODO write your makefile here
-all :compile run
-test : compile test1
-
-compile :
+compile : compilePlayers GameControler.ozf PlayerManager.ozf GUI.ozf Main.ozf
 	@ozc -c *.oz
-gameC : 
+
+compilePlayers:
+	@ozc -c Player000basic.oz Player000simultaneous.oz Player000survivor.oz Player000extension.oz
+
+GameControler.ozf : 
 	@ozc -c GameControler.oz
 gameCB : 
 	@ozc -c GameControlerBomber.oz
-gameM : 
+gameM :
+	@ozc -c Main.oz 
+PlayerManager.ozf :
+	@ozc -c PlayerManager.oz
+GUI.ozf :
+	@ozc -c GUI.oz
+Main.ozf :
 	@ozc -c Main.oz
-gameI : 
+Input.ozf :
 	@ozc -c Input.oz
-basic :
+Player000basic.ozf :
 	@ozc -c Player000basic.oz
-simultaneous :
+Player000simultaneous.ozf :
 	@ozc -c Player000simultaneous.oz
 smart :
 	@ozc -c Player000extension.oz
+Player000survivor.ozf:
+	@ozc -c Player000survivor.oz
+Player000extension.ozf:
+	@ozc -c Player000extension.oz
+
 run :
 	@ozengine Main.ozf
 
 clean :
-	@rm -rf GUI.ozf Input.ozf Main.ozf PlayerManager.ozf GameControler.ozf Player000basic.ozf Player000simultaneous.ozf Player000extension.ozf GameControlerBomber.ozf
+	@rm -rf GUI.ozf Input.ozf Main.ozf PlayerManager.ozf GameControler.ozf Player000basic.ozf Player000simultaneous.ozf Player000survivor.ozf Player000extension.ozf Player000extension.ozf GameControlerBomber.ozf
