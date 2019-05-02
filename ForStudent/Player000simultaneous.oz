@@ -413,11 +413,8 @@ in
             if PlayerInfo.state == off then %The player is already off the board
                BomberResult = null
                {TreatStream Tail PlayerInfo}
-            else %The player is on the board and needs to decrease its life by one %TODOOOOOOOOOOOOOOO Change that to update at the reception of the deadplayer(ID) message
-               %NewPlayerInfo in
-               %NewPlayerInfo = infos(id: PlayerInfo.id lives:(PlayerInfo.lives-1) bombs:PlayerInfo.bombs score: PlayerInfo.score state:off currentPos:PlayerInfo.currentPos initPos:PlayerInfo.initPos map:PlayerInfo.map rivals:PlayerInfo.rivals)
+            else %The player is on the board, return the new value of its life
                BomberResult = death(PlayerInfo.lives-1)
-               %{TreatStream Tail NewPlayerInfo}
                {TreatStream Tail PlayerInfo}
             end
          []info(M) then
@@ -428,14 +425,5 @@ in
          end
       end
    end
-
-  
-	/*proc {TreatStream Stream }
-		case Stream
-		of Msg|Stail then
-			{TreatStream Stail}
-		else skip %something went wrong
-		end
-	end*/
    
 end %End Module
