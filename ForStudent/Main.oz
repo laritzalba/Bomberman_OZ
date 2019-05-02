@@ -128,6 +128,18 @@ define
     end 
   end
 
+     fun {AddSpawnMessage PlayerList}
+        {Show {List.is PlayerList}}
+        case PlayerList
+        of nil then nil 
+        [] Bomber|T then
+           ID in
+           {Send Bomber.mybomberPort getId(ID)}
+           {Wait ID} 
+           spawnPlayer(ID Bomber.currentPosition)|{AddSpawnMessage T}
+        end
+    end 
+
    fun {Init_Show_Bombers GameState}
       fun {Helper_Init_Show_Bombers ExtendedBombers Count}
          case ExtendedBombers
@@ -155,8 +167,7 @@ define
       
    end
 
-
-
+  
  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
  % Turn By Turn
  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -231,12 +242,14 @@ in
 end 
 
  proc {TurnByTurn}
-   GameState1 GameState
+   GameState1 GameState MessageSpawnInit
  in
      
       %Create the state of the game  
       GameState1 = {GameControler.createState}
       GameState = {InitGamestate GameState1}
+      MessageSpawnInit = {AddSpawnMessage GameState.playersList}
+      {GameControler.broadcastMessage GameState.playersList MessageSpawnInit}
       {LoopTurnByTurn {Adjoin GameState gameState(portWindow: PortWindow)} GameState.playersList}
  end
 
@@ -395,7 +408,7 @@ end
    end 
 
   proc{Simultaneous}
-     Coucou PortGameState ResultGameState UpdatedGameState GameState PlayerToTest
+     Coucou PortGameState ResultGameState UpdatedGameState GameState PlayerToTest MessageSpawnInit
   in
     PortGameState = {GameControler.portGameState}
    
@@ -406,7 +419,10 @@ end
     {Show 'Update Init 1 '}
     {Send PortGameState updateGameState(UpdatedGameState)}
     {Show3 'Gamestatte to start '# UpdatedGameState}
-    
+   
+    MessageSpawnInit = {AddSpawnMessage UpdatedGameState.playersList}
+    {GameControler.broadcastMessage UpdatedGameState.playersList MessageSpawnInit}
+
     PlayerToTest= {Nth UpdatedGameState.playersList 1}
     {Show3 'PlayerToTest' # PlayerToTest}
    

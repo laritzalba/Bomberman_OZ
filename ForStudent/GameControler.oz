@@ -591,7 +591,7 @@ fun{ExploseListPoints GameState ListPointToExplose Bomb}
       case Type 
       of point then UpdateExtenderBomber in 
          UpdateExtenderBomber = {Adjoin ExtendedBomber extendedBomber(score:Result)}
-          
+          {Show7 'Adding Score to Player ************** the new score is '}
          {Adjoin GameState gameState(unveiledPoint: {List.subtract GameState.unveiledPoint Pos}
                                      playersList:{Replace GameState.playersList ExtendedBomber UpdateExtenderBomber})}
       [] bomb then 
