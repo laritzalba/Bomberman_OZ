@@ -38,9 +38,9 @@ in
 
 %%%% Style of game %%%%
    
-   IsTurnByTurn = true
+   IsTurnByTurn = false
    UseExtention = false
-   PrintOK = false
+   PrintOK = true  
 
 
 %%%% Description of the map %%%%
@@ -124,7 +124,7 @@ in
    NbRow = 7
    NbColumn = 13
 
-    %Map = {CreateMap}
+    Map = {CreateMap}
 
 
 /* Map = [[1 1 1 1 1 1 1 1 1 1 1 1 1]
@@ -146,7 +146,7 @@ in
 */
 
 % Map to test if player avoid walls and boxes properly
-Map = [[1 1 1 1 1 1 1 1 1 1 1 1 1]
+/*Map = [[1 1 1 1 1 1 1 1 1 1 1 1 1]
 	  [1 4 0 0 1 0 2 0 0 2 0 4 1]
 	  [1 0 0 0 1 0 3 0 0 2 0 0 1]
 	  [1 1 1 1 0 0 0 0 0 2 2 2 1]
@@ -154,7 +154,7 @@ Map = [[1 1 1 1 1 1 1 1 1 1 1 1 1]
 	  [1 4 0 0 1 0 1 0 3 0 0 4 1]
 	  [1 1 1 1 1 1 1 1 1 1 1 1 1]]
    
-
+*/
    %%%%%%%%% ATTENTION %%%%%%%%%%
    
 
@@ -162,17 +162,17 @@ Map = [[1 1 1 1 1 1 1 1 1 1 1 1 1]
 
 %%%% Players description %%%%
 
-   NbBombers = 4
-   Bombers = [player000bomber player000name player000name player000name]
-   ColorBombers = [yellow red green blue]
+   NbBombers = 6
+   Bombers = [player000bomber player000name player000name player000name player000name player000name]
+   ColorBombers = [yellow red blue green white black]
 
 %%%% Parameters %%%%
 
-   NbLives = 10
+   NbLives = 1
    NbBombs = 10
  
-   ThinkMin = 500  % in millisecond
-   ThinkMax = 2000 % in millisecond
+   ThinkMin = 50  % in millisecond
+   ThinkMax = 200 % in millisecond
    
    Fire = 3
    TimingBomb = 5 

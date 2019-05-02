@@ -14,6 +14,7 @@ export
    getWinner:GetWinner
    countMapBoxes:CountMapBoxes
    portGameState: AccesToGameState
+   broadcastMessage: BroadcastMessage
 define
   /* Show
    Show2
@@ -75,6 +76,8 @@ define
    LocalDebug3= false
    LocalDebug4= false
    LocalDebug5= false
+   LocalDebug6 = false 
+   LocalDebug7 = false 
 
  %%% TOOLS %%%%
   proc {Show Msg}
@@ -99,6 +102,16 @@ define
 
   proc {Show5 Msg}
     if (LocalDebug5 == true) then {System.show Msg}
+    else skip end 
+  end
+
+  proc {Show6 Msg}
+    if (LocalDebug6 == true) then {System.show Msg}
+    else skip end 
+  end
+
+  proc {Show7 Msg}
+    if (LocalDebug7 == true) then {System.show Msg}
     else skip end 
   end
  %%% END TOOLS %%%%
@@ -284,7 +297,7 @@ define
                         {Wait ID2}
                         {Wait Pos}
                         {LoopToCheckDamage T 
-                            {Append MessageList [spawnPlayer(ID2 Pos)]}
+                            {Append MessageList [deadPlayer(ID2) spawnPlayer(ID2 Pos)]}
                             % respaw in the next round Atttention change
                             {Append WindowsList [hidePlayer(ID) lifeUpdate(ID2 NewLife) spawnPlayer(ID2 Pos)]}
                             Dead
@@ -695,7 +708,7 @@ fun{ExploseListPoints GameState ListPointToExplose Bomb}
            displayWinner(ID)|{AddWinnerMessage T}
         end
     end 
-
+  
     fun {GetWinner GameState}
       fun{CheckScore PlayerList WinnerList MaxScore}
         case PlayerList 
@@ -818,9 +831,11 @@ fun{ExploseListPoints GameState ListPointToExplose Bomb}
      case PlayerList 
      of nil then false
      [] CurrentBomber|T then 
+        {Show7 'PlayerList'# PlayerList}
+        {Show7 'PlayerList'# CurrentBomber}
         if CurrentBomber.localID == Bomberman.localID then true 
          else 
-         {FindBomber PlayerList T}
+         {FindBomber T Bomberman}
          end 
     end 
 end 
@@ -833,7 +848,7 @@ in
    in
       {NewPort Stream Port}
       GameStateBasic = {CreateState} 
-      GameState = {Adjoin GameStateBasic gameState(decision:true secondDecision: true)}
+      GameState = {Adjoin GameStateBasic gameState(decision:true secondDecision:true isChanging:0)}
       thread {TreatStream Stream GameState FinalGamestate} end
       Port
    end 
@@ -857,14 +872,19 @@ in
                     {TreatStream Stail NewGameState FinalGamestate}
                 else 
                     DecisionResult = false 
-                    {Show2 'decision(DecisionResult)'# DecisionResult}
+                    {Show6 'decision(DecisionResult)'# DecisionResult}
                     {TreatStream Stail GameState FinalGamestate} 
                 end
         [] freeGameState() then  NewGameState in
                 NewGameState= {Adjoin GameState gameState(decision:true)}
-                 {Show2 'updatingDecision(Val)'}
+                 {Show6 'updatingDecision(Val)'}
                 {TreatStream Stail NewGameState FinalGamestate}
-
+        [] askChange(Res) then 
+	                 Res=GameState.isChanging
+	                {TreatStream Stail GameState FinalGamestate}
+        [] changing(Res) then NewGameState in
+	             NewGameState={Adjoin GameState gameState(isChanging:Res)}
+	             {TreatStream Stail NewGameState FinalGamestate}
 
         [] getSecondDecision(SecondDecision) then NewGameState in 
                  if GameState.secondDecision == true then 
@@ -873,13 +893,13 @@ in
                     {TreatStream Stail NewGameState FinalGamestate}
                 else 
                     SecondDecision = false 
-                    {Show2 'decision(DecisionResult)'# SecondDecision}
+                    {Show6 'second get decision(DecisionResult)'# SecondDecision}
                     {TreatStream Stail NewGameState FinalGamestate} 
                 end               
             
         []freeSecondDecision() then NewGameState in
                 NewGameState= {Adjoin GameState gameState(secondDecision:true)}
-                {Show2 'freeSecondDecision()'}
+                {Show6 'freeSecondDecision()'}
                 {TreatStream Stail NewGameState FinalGamestate}        
 
         [] getGameState(ResultGameState) then 
@@ -891,6 +911,9 @@ in
         [] updateGameState(NewGameState) then 
                 {Show2 'update NewGamestate'}
                 {TreatStream Stail NewGameState FinalGamestate}
+        [] updateBombGamestate(GamestateUpToDate) then 
+                 GamestateUpToDate= {UpdateBombGamestate GameState}
+                 {TreatStream Stail GamestateUpToDate FinalGamestate}
                 %Update info in State 
         [] hidePoint(Pos) then NewGameState in
                 NewGameState = {HidePoint GameState Pos}
@@ -929,12 +952,19 @@ in
                 {BroadcastMessage GameState.playersList ToBroadcast}
                 {TreatStream Stail GameState FinalGamestate} 
                 %Nex to review 
-          [] executeAction(DoActionGamestate ActionList NewGameState) then 
-                    {TreatStream ActionList DoActionGamestate NewGameState}
+          [] executeAction(ActionList NewGameState) then 
+                    {Show6 ' ********** executeAction(ActionList NewGameState)************'}
+                    {TreatStream ActionList GameState NewGameState}
                     {TreatStream Stail NewGameState FinalGamestate}
         [] testMessage(Coucou)then
                 Coucou='Coucou'
-                {TreatStream Stail GameState FinalGamestate}     
+                {TreatStream Stail GameState FinalGamestate}
+        [] getWinner(LastGAmestate) then 
+                LastGAmestate = {GotAWinner GameState} 
+                {TreatStream Stail LastGAmestate FinalGamestate} % close port  ? nil
+        [] clean() then  NewGameState in
+              NewGameState = {RefreshList GameState} 
+             {TreatStream Stail NewGameState FinalGamestate}
         else
 	        {System.show 'unsupported message'#Message}
 	        {TreatStream Stail GameState FinalGamestate}
