@@ -41,7 +41,7 @@ define
    % Debug
    Show Show2
    LocalDebug= false
-   LocalDebug2= true
+   LocalDebug2= false
 in
 %%% TOOLS %%%%
   proc {Show Msg} %Used for info messages (in this file)
@@ -147,90 +147,7 @@ in
       end
    end
 
-   /*
-    * Drop a bomb if possible in 0.1 of the case or if it impossible to move
-    * Move randomly in a non-wall direction in 0.9 other case or if there is no bomb left
-    * Do nothing if neither action is possible
-    * @NewPlayerInfo: bounded to PlayerInfo if player has moved or if no action could be done,
-    *             bounded to an updated version of Info player where bombs is decreased by one if a bomb was droped
-    * @Action: is bound to bomb(PlayerInfo.currentPos) if a bomb was drop,
-    *          to move(pos) where pos is the new player position if the player has moved,
-    *          to null if no action could be done (player is off the board or trapped with no wall left)
-    */
-   /*proc{DoAction PlayerInfo Action NewPlayerInfo}
-      {Show 'DoAction'#PlayerInfo.id.id#PlayerInfo.currentPos}
-      Rand NewPos in
-      Rand = ({OS.rand} mod BOMB_FREQ)
-      if PlayerInfo.state == off then
-         Action = null
-         NewPlayerInfo = PlayerInfo
-      else
-         if Rand == 0 then % chance of 1/BOMB_FREQ to drop a bomb if possible
-            if PlayerInfo.bombs > 0 andthen ({CheckTile PlayerInfo.map PlayerInfo.currentPos.x PlayerInfo.currentPos.y} mod OTHER_BOMB) >= MY_BOMB then %There are still bomb left and none of my bombs on the tile
-               Action = bomb(PlayerInfo.currentPos)
-               NewPlayerInfo = infos(id: PlayerInfo.id lives:PlayerInfo.lives bombs:(PlayerInfo.bombs-1) score:PlayerInfo.score state:PlayerInfo.state currentPos:PlayerInfo.currentPos initPos:PlayerInfo.initPos map:PlayerInfo.map rivals:PlayerInfo.rivals)
-               {Show 'DoAction - Bombed'}
-            else %could not drop a bomb, try to move
-               NewPos = {MoveRandom PlayerInfo}
-               if NewPos == null then %it was impossible to move
-                  Action = null
-                  {Show2 'DoAction Error: Player is trapped and cannot drop a bomb'}
-               else
-                  Action = move(NewPos)
-                  {Show 'DoAction - Moved'}{Safest Pos danger SafeOptions Nbr}
-      if Nbr =< 1 then
-         NewPos = SafeOptions
-      elseif Nbr == 2 then
-         Rand = ({OS.Rand} mod 2)
-         if Rand == 0 then
-            NewPos = SafeOptions.1
-         else
-            NewPos = SafeOptions.2
-         end
-      elseif Nbr == 3 then
-         Rand = ({OS.Rand} mod 3)
-         if Rand == 0 then
-            NewPos = SafeOptions.1
-         elseif Rand == 1 then
-            NewPos = SafeOptions.2
-         else
-            NewPos = SafeOptions.3
-         end
-      elseif Nbr == 4 then
-         Rand = ({OS.Rand} mod 4)
-         if Rand == 0 then
-            NewPos = SafeOptions.1
-         elseif Rand == 1 then
-            NewPos = SafeOptions.2
-         elseif Rand == 2 then
-            NewPos = SafeOptions.3
-         else
-            NewPos = SafeOptions.4
-         end
-      end
-      NewPos
-               end
-               NewPlayerInfo = PlayerInfo
-            end
-         else % chance of 1-(1/BOMB_FREQ) to move if possible
-            NewPos = {MoveRandom PlayerInfo}
-            if NewPos == null then %Player is trapped and will try to drop a bomb
-               if PlayerInfo.bombs > 0 andthen ({CheckTile PlayerInfo.map PlayerInfo.currentPos.x PlayerInfo.currentPos.y} mod OTHER_BOMB) >= MY_BOMB then %There are still bomb left and none of my bombs on the tile
-                  Action = bomb(PlayerInfo.currentPos)
-                  NewPlayerInfo = infos(id: PlayerInfo.id lives:PlayerInfo.lives bombs:(PlayerInfo.bombs-1) score:PlayerInfo.score state:PlayerInfo.state currentPos:PlayerInfo.currentPos initPos:PlayerInfo.initPos map:PlayerInfo.map rivals:PlayerInfo.rivals)
-               else %Player cannot move nor drop a bomb
-                  Action = null
-                  NewPlayerInfo = PlayerInfo
-               end
-            else %player has moved
-               Action = move(NewPos)
-               NewPlayerInfo = PlayerInfo
-               {Show 'DoAction - Moved'}
-            end
-            {Show2 'DoAction'#PlayerInfo.id.id#'Action'#Action#NewPlayerInfo}
-         end
-      end
-   end*/
+   
 
    fun{DangerValue Map X Y}
       {Show 'DangerValue in pos'#X#Y}
@@ -442,7 +359,6 @@ in
          Rand in
          Rand = ({OS.rand} mod BOMB_FREQ)
          if Rand == 0 then % chance of 1-(1/BOMB_FREQ) to drop a bomb if possible
-            %TODOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO  Check if possible to be safe afterwards
             TileCheck in 
             TileCheck = ({CheckTile PlayerInfo.map PlayerInfo.currentPos.x PlayerInfo.currentPos.y} mod OTHER_BOMB) =< MY_BOMB
             {Show 'DoAction'#PlayerInfo.id.id#'Try to drop a bomb:Bomb nbr'#PlayerInfo.bombs#'Tile is'#TileCheck}

@@ -10,7 +10,7 @@ compile : compilePlayers GameControler.ozf PlayerManager.ozf GUI.ozf Main.ozf
 	@ozc -c *.oz
 
 compilePlayers:
-	@ozc -c Player000survivor.oz Player000simultaneous.oz Player000basic.oz
+	@ozc -c Player000survivor.oz Player000simultaneous.oz
 
 GameControler.ozf : 
 	@ozc -c GameControler.oz

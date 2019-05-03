@@ -40,7 +40,7 @@ in
 %%%% Style of game %%%%
    
    IsTurnByTurn =true
-   UseExtention = true
+   UseExtention = false
    PrintOK = false
 
 
@@ -164,15 +164,16 @@ in
 
 %%%% Players description %%%%
 
-   NbBombers = 2
-   Bombers = [player000survivor player000survivor]
-   ColorBombers = [blue red]
+   NbBombers = 4
+   Bombers = [player000simultaneous player000simultaneous player000simultaneous player000simultaneous]
+   ColorBombers = [blue red yellow green]
    %player000simultaneous
    %player000survivor
    %player003John
    %random
    %player001name
    %player100advanced
+   %player101advanced
    %player038Luigi
 
 %%%% Parameters %%%%
@@ -184,7 +185,7 @@ in
    ThinkMax = 200 % in millisecond
    
    Fire = 3
-   TimingBomb = 5 
+   TimingBomb = 12
    TimingBombMin = 3000 % in millisecond
    TimingBombMax = 4000 % in millisecon
 end
