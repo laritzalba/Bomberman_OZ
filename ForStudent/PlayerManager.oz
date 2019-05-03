@@ -7,9 +7,10 @@ import
    
    %Players for interoperability tests
    Player003John
-   Player031Random
    Random
    Player001name
+   Player100advanced
+   Player038Luigi
    %% Add here the name of the functor of a player
    %% Player000name
 export
@@ -25,9 +26,10 @@ in
       [] player000survivor then {Player000survivor.portPlayer ID}
       %Players for interoperability tests:
       [] player003John then {Player003John.portPlayer ID}
-      [] player031random then {Player031Random.portPlayer ID}
       [] random then {Random.portPlayer ID}
       [] player001name then {Player001name.portPlayer ID}
+      [] player100advanced then {Player100advanced.portPlayer ID}
+      [] player038Luigi then {Player038Luigi.portPlayer ID}
       %% Add here the pattern to recognize the name used in the 
       %% input file and launch the portPlayer function from the functor
       %%[] player000name then {Player000name.portPlayer ID}
