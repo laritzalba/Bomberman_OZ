@@ -34,7 +34,8 @@ define
    LocalDebug2= false
     LocalDebug3= false
     LocalDebug4= false
-    LocalDebug5= true
+    LocalDebug5= false
+    LocalDebug6= true
    
 
   /*%Init game
@@ -76,6 +77,12 @@ define
 
   proc {Show5 Msg}
     if (LocalDebug5 == true) then {System.show Msg}
+    else skip end 
+  end
+
+
+    proc {Show6 Msg}
+    if (LocalDebug6 == true) then {System.show Msg}
     else skip end 
   end
  %%% END TOOLS %%%%
@@ -289,11 +296,11 @@ end
              % Loop until is abailable to make changes 
              %{Show4 ' 2 ThreadID: '# ThreadID #'Decision is '#Decision} 
              {LoopSimulataneous Bomberman PortGameState ThreadID}       
-         else  Continue GameState DoActionGamestate IsEnded in
+         else  Continue GameState DoActionGamestate IsEnded AmIDead  in
            % {Show5 '3 ThreadID: '# ThreadID #'Decision is acepted'#Decision}
             % Play once and free GameState    
             {Time.alarm ({OS.rand} mod (Input.thinkMax-Input.thinkMin))+Input.thinkMin Continue}
-
+            
             %{Show5 'esperando YYYYYYYYYY'}
             {Send PortGameState getGameState(GameState)}           
             % {Show5 'esperando Yjhgjhgjhgj'}
@@ -312,25 +319,17 @@ end
             % I'm in GameState only for me
              {Show5 'esperando YYYYYYYYYY222222222'}
              {Send PortGameState isGameOver(IsEnded)}
-            {Wait IsEnded}    
-            {Show5 'esperando YYYYYYYYYY4444444444444'}
-            if (IsEnded) then 
-               %{Send PortGameState freeGameState()}
-               skip
-            else AmIDead in
-                {Show5 'BOMBERMAN  (((((((((((((((()))))))))))))'# Bomberman}
-                {Send PortGameState getBomberEtat(AmIDead Bomberman)}
-                {Wait AmIDead }
-               if (AmIDead) then                
-                   {Send PortGameState freeGameState()}
-                   skip 
-               else LastGameState in
+             {Wait IsEnded} 
+             {Send PortGameState getBomberEtat(AmIDead Bomberman)}
+             {Wait AmIDead }   
+             {Show5 'esperando YYYYYYYYYY4444444444444'}
 
+            %  if not IsEnded and not AmIDead
+            if (IsEnded == false ) andthen (AmIDead == false) then  LastGameState in             
                   {Send PortGameState executeAction(DoActionGamestate.1 LastGameState)}
                   {Wait LastGameState} 
                   {GameControler.broadcastMessage LastGameState.playersList DoActionGamestate.2}
                   {ShowAction DoActionGamestate.3}
-
                   {Send PortGameState clean()} 
  
                   {Send PortGameState freeGameState()}
@@ -338,10 +337,20 @@ end
                   {Show5 ' 7 ThreadID: '# ThreadID #'Gamestate is free '}
                   {Delay 100} % change delay el min time of game /2
                   {LoopSimulataneous Bomberman PortGameState ThreadID} 
-               end
-            end 
-         end    
+            elseif (IsEnded== true) then  EndGameState in % if IsEnded 
+                  {Show6 'END OF GAME  000 NEXT PRINT (((((((((((((((()))))))))))))'# Bomberman}              
+                  {Send PortGameState getWinner(EndGameState)}
+                  {Wait EndGameState}
+                  {ShowAction EndGameState.actionToShow}
+                 % {Send PortGameState freeGameState()} 
+            else  %(AmIDead == true) %if AmIDead          
+                  {Send PortGameState freeGameState()}
+            end
+            
+            if IsEnded andthen AmIDead then skip end 
+         end 
    end
+
 
 
    proc{CreateThread PlayersList PortGameState Count}
@@ -354,33 +363,36 @@ end
       end
    end 
    
-   proc{LoopUpdateBomb BombList PortGameState}
+
+ proc{LoopUpdateBomb BombList PortGameState}
        case BombList 
        of nil then skip 
        [] Bomb|T then  IsEnded in 
             if(Bomb.timingBomb == unit) then GamestateUpToDate in
                {Show5 'Entro a la bomba!!!!!'}
                {Send PortGameState changing(1)}
-               {Send PortGameState updateBombGamestate(GamestateUpToDate)}
-               {Wait GamestateUpToDate}
-               {GameControler.broadcastMessage GamestateUpToDate.playersList GamestateUpToDate.messageList}
                {Send PortGameState isGameOver(IsEnded)}
-               {Wait IsEnded}    
-                  if (IsEnded) then 
-                     {Send PortGameState changing(0)}
-                     skip
-                  else                
-                     {ShowAction GamestateUpToDate.actionToShow}
-                     {Send PortGameState changing(0)}
-                     {Show5 'Salgo de la bomba !!!!!!!!!!!!'}
-                     {Send PortGameState clean()}
-                     {LoopUpdateBomb T PortGameState}
-                  end
+               {Wait IsEnded}  
+               if (IsEnded) then 
+                  {Show5 'END GAME IN BOMB'}
+                  {Send PortGameState changing(0)}
+                  skip
+               else 
+                  {Send PortGameState updateBombGamestate(GamestateUpToDate)}
+                  {Wait GamestateUpToDate}
+                  {GameControler.broadcastMessage GamestateUpToDate.playersList GamestateUpToDate.messageList}            
+                  {ShowAction GamestateUpToDate.actionToShow}
+                  {Send PortGameState changing(0)}
+                  {Show5 'Salgo de la bomba !!!!!!!!!!!!'}
+                  {Send PortGameState clean()}
+                  {LoopUpdateBomb T PortGameState}
+               end
             else 
-                  {LoopUpdateBomb BombList PortGameState}
+               {LoopUpdateBomb BombList PortGameState}
             end
-      end
+       end
    end
+
 
     proc{CheckTimingBomb PortGameState} 
          List  GameState IsEnded
@@ -430,7 +442,7 @@ end
     
     thread {CheckTimingBomb PortGameState} end
     {CreateThread UpdatedGameState.playersList PortGameState 1}
-    thread {EndOfGame PortGameState} end 
+    %thread {EndOfGame PortGameState} end 
     
     %{Show3 'Creating Bomb Update thread'}
       
