@@ -281,38 +281,46 @@ define
             of nil then rec( dead:Dead alive:Alive messageList:MessageList windowsList:WindowsList)
             [] BomberHited|T then
                 ID Result ID2 Pos Wind in
+                                
                 {Send BomberHited.mybomberPort gotHit(ID Result)}
                 {Wait ID}
-                {Wait Result}
-                {BroadcastMessage GameState.playersList [deadPlayer(ID)]}
-                Wind = {Append WindowsList [hidePlayer(ID)]}
-                case Result 
-                of death(NewLife) then
-                    if (NewLife==0) then %
-                    % BomberHited is dead 
-                        {LoopToCheckDamage T 
-                            {Append MessageList [deadPlayer(ID)]}
-                            {Append WindowsList [hidePlayer(ID) lifeUpdate(ID NewLife)]}
-                            {Append Dead [BomberHited]}
-                            Alive
-                        }
-                    else
-                    %Bomber Hited has remaining lives
-                        {Send BomberHited.mybomberPort spawn(ID2 Pos)}
-                        {Wait ID2}
-                        {Wait Pos}
-                        {LoopToCheckDamage T 
-                            {Append MessageList [spawnPlayer(ID2 Pos)]}
-                            % respaw in the next round Atttention change
-                            {Append WindowsList [hidePlayer(ID) lifeUpdate(ID2 NewLife) spawnPlayer(ID2 Pos)]}
-                            Dead
-                            {Append Alive [BomberHited]}
-                        }
+                {Wait Result} 
+                if (ID == nil) then ID2 in
+                    {Send BomberHited.mybomberPort getId(ID2)}
+                    {Wait ID2}
+                    {LoopToCheckDamage T {Append MessageList [deadPlayer(ID2)]} WindowsList Dead Alive }
+                else  % hited first Time
+                   {Show7 'GO HITED FIRST TIME ^^^^^^^^^^^^^^^*&*&*&*&*&'}     
+                    Wind = {Append WindowsList [hidePlayer(ID)]}
+                    case Result 
+                    of death(NewLife) then
+                            if (NewLife==0) then 
+                            % BomberHited is dead 
+                                {LoopToCheckDamage T 
+                                    {Append MessageList [deadPlayer(ID)]}
+                                    {Append WindowsList [hidePlayer(ID) lifeUpdate(ID NewLife)]}
+                                    {Append Dead [BomberHited]}
+                                    Alive
+                                }
+                            else
+                                %Bomber Hited has remaining lives
+                                {BroadcastMessage GameState.playersList [deadPlayer(ID)]}
+                                {Send BomberHited.mybomberPort spawn(ID2 Pos)}
+                                {Wait ID2}
+                                {Wait Pos}
+                                {LoopToCheckDamage T 
+                                    {Append MessageList [spawnPlayer(ID2 Pos)]}
+                                    % respaw in the next round Atttention change
+                                    {Append WindowsList [hidePlayer(ID) lifeUpdate(ID2 NewLife) spawnPlayer(ID2 Pos)]}
+                                    Dead
+                                    {Append Alive [BomberHited]}
+                                }
+                            end 
+                    else 
+                        % To revoir
+                        {LoopToCheckDamage T MessageList Wind Dead Alive} 
                     end
-                else 
-                    % To revoir
-                    {LoopToCheckDamage T MessageList Wind Dead Alive}  
-                end            
+                end             
             end 
         end     
     Rec in 
@@ -524,33 +532,7 @@ fun{ExploseListPoints GameState ListPointToExplose Bomb}
         end       
     end
 
-/*
-     fun{UpdateBomb GameState}
-        fun {Helper_UpdateBomb GameState ListBomb UpdatedListBomb}
-            case ListBomb
-            of nil then rec(lb:UpdatedListBomb gs:GameState)
-            [] Bomb|T then  NewtimingBomb in 
-                NewtimingBomb = Bomb.timingBomb -1 
-                {Show5 'Bomb Timing ' # NewtimingBomb # Bomb.bombpos}  
-                if NewtimingBomb == 0 then  % explode 
-                     {Show5 'Go to explose ************\n'#GameState.bombList}                      
-                    {Helper_UpdateBomb {KaBoom Bomb GameState} T {List.subtract UpdatedListBomb Bomb}} 
-                else  
-                    %  continue to check bombTimer
-                    NewtimingBomb= (Bomb.timingBomb-1)
-                    {Helper_UpdateBomb GameState T {Append UpdatedListBomb [{Adjoin Bomb bomb(timingBomb:NewtimingBomb)}]}}
-                end
-            end      
-        end
-    in % if there are not bombs I dont need to update state because nothing happend 
-        if GameState.bombList == nil then GameState
-        else Rec in 
-            Rec= {Helper_UpdateBomb GameState GameState.bombList nil}
-            {Adjoin Rec.gs gameState(bombList:Rec.lb)} 
-        end       
-    end
 
- */
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   % Update Gamestate
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
