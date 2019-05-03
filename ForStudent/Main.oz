@@ -338,9 +338,10 @@ end
                   {Delay 100} % change delay el min time of game /2
                   {LoopSimulataneous Bomberman PortGameState ThreadID} 
             elseif (IsEnded== true) then  EndGameState in % if IsEnded 
-                  {Show6 'END OF GAME  000 NEXT PRINT (((((((((((((((()))))))))))))'# Bomberman}              
+                              
                   {Send PortGameState getWinner(EndGameState)}
                   {Wait EndGameState}
+                  {Show6 'END OF GAME  000 NEXT PRINT (((((((((((((((()))))))))))))'# EndGameState}  
                   {ShowAction EndGameState.actionToShow}
                  % {Send PortGameState freeGameState()} 
             else  %(AmIDead == true) %if AmIDead          
@@ -368,8 +369,7 @@ end
        case BombList 
        of nil then skip 
        [] Bomb|T then  IsEnded in 
-            if(Bomb.timingBomb == unit) then GamestateUpToDate in
-               {Show5 'Entro a la bomba!!!!!'}
+            if(Bomb.timingBomb == unit) then GamestateUpToDate GamestateToChange in
                {Send PortGameState changing(1)}
                {Send PortGameState isGameOver(IsEnded)}
                {Wait IsEnded}  
@@ -378,12 +378,15 @@ end
                   {Send PortGameState changing(0)}
                   skip
                else 
+                  {Send PortGameState getGameState(GamestateToChange)}
+                  {Wait GamestateToChange}
+                  {Show6 'ENTRANDO A LA BOMBA  !!!!!!!!!!!!' # GamestateToChange}
                   {Send PortGameState updateBombGamestate(GamestateUpToDate)}
                   {Wait GamestateUpToDate}
                   {GameControler.broadcastMessage GamestateUpToDate.playersList GamestateUpToDate.messageList}            
                   {ShowAction GamestateUpToDate.actionToShow}
                   {Send PortGameState changing(0)}
-                  {Show5 'Salgo de la bomba !!!!!!!!!!!!'}
+                  {Show6 'SALGO DE LA BOMBA  !!!!!!!!!!!!' # GamestateUpToDate}
                   {Send PortGameState clean()}
                   {LoopUpdateBomb T PortGameState}
                end
@@ -404,21 +407,6 @@ end
          {CheckTimingBomb PortGameState} 
    end
    
-
-   proc{EndOfGame PortGameState}
-      IsEnded
-   in
-      {Send PortGameState isGameOver(IsEnded)}
-      {Wait IsEnded}    
-      if (IsEnded) then EndGameState in 
-         {Send PortGameState getWinner(EndGameState)}
-         {Wait EndGameState}
-         {ShowAction EndGameState.actionToShow} 
-      else
-        {EndOfGame PortGameState}
-      end 
-   end 
-
   proc{Simultaneous}
      Coucou PortGameState ResultGameState UpdatedGameState GameState PlayerToTest MessageSpawnInit
   in
@@ -428,30 +416,16 @@ end
     {Send PortGameState getGameState(GameState)}
     {Wait GameState}
     UpdatedGameState= {InitGamestate GameState}
-    {Show 'Update Init 1 '}
     {Send PortGameState updateGameState(UpdatedGameState)}
-    {Show3 'Gamestatte to start '# UpdatedGameState}
    
     MessageSpawnInit = {AddSpawnMessage UpdatedGameState.playersList}
     {GameControler.broadcastMessage UpdatedGameState.playersList MessageSpawnInit}
 
-    PlayerToTest= {Nth UpdatedGameState.playersList 1}
-    {Show3 'PlayerToTest' # PlayerToTest}
-   
-    %{CreateThread [PlayerToTest] PortGameState 1}
+    PlayerToTest= {Nth UpdatedGameState.playersList 1} 
     
     thread {CheckTimingBomb PortGameState} end
     {CreateThread UpdatedGameState.playersList PortGameState 1}
-    %thread {EndOfGame PortGameState} end 
     
-    %{Show3 'Creating Bomb Update thread'}
-      
-      
-    %%%%% To Delete Test Message Port %%%%%%
-    {Send PortGameState testMessage(Coucou)}
-    {Wait Coucou}
-    {Show 'Message test to Port GameState '#Coucou}
-    %%%%%%% End To Delete%%%%%%%%%%%%%%%%%%%
 end
 
 

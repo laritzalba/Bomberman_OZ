@@ -81,7 +81,8 @@ define
    LocalDebug4= false
    LocalDebug5= false
    LocalDebug6 = false 
-   LocalDebug7 = true
+   LocalDebug7 = false
+   LocalDebug8 = true
 
  %%% TOOLS %%%%
   proc {Show Msg}
@@ -116,6 +117,11 @@ define
 
   proc {Show7 Msg}
     if (LocalDebug7 == true) then {System.show Msg}
+    else skip end 
+  end
+
+   proc {Show8 Msg}
+    if (LocalDebug8 == true) then {System.show Msg}
     else skip end 
   end
  %%% END TOOLS %%%%
@@ -571,11 +577,13 @@ fun{ExploseListPoints GameState ListPointToExplose Bomb}
       {Send ExtendedBomber.mybomberPort add(Type Option Result)}
       {Wait Result}
       case Type 
-      of point then UpdateExtenderBomber in 
+      of point then UpdateExtenderBomber GTs in 
          UpdateExtenderBomber = {Adjoin ExtendedBomber extendedBomber(score:Result)}
-          {Show7 'Adding Score to Player ************** the new score is '}
-         {Adjoin GameState gameState(unveiledPoint: {List.subtract GameState.unveiledPoint Pos}
+          {Show8 'Adding Score to Player ************** the new score is '# Result}
+         GTs= {Adjoin GameState gameState(unveiledPoint: {List.subtract GameState.unveiledPoint Pos}
                                      playersList:{Replace GameState.playersList ExtendedBomber UpdateExtenderBomber})}
+        {Show8 'New Gamestate whit score updated '#GTs}
+        GTs
       [] bomb then 
          {Adjoin GameState gameState(unveiledBonus: {List.subtract GameState.unveiledBonus Pos})}
       end      
@@ -703,7 +711,7 @@ fun{ExploseListPoints GameState ListPointToExplose Bomb}
         end
     end 
   
-    fun {GetWinner GameState}
+    fun {GetWinner2 GameState}
       fun{CheckScore PlayerList WinnerList MaxScore}
         case PlayerList 
         of nil then WinnerList 
@@ -721,6 +729,28 @@ fun{ExploseListPoints GameState ListPointToExplose Bomb}
         PlayerList= {Append GameState.playersList GameState.deadPlayersList}
         {CheckScore  PlayerList.2 [PlayerList.1] PlayerList.1.score}       
     end
+
+
+fun {GetWinner GameState}
+      fun{CheckScore PlayerList WinnerList MaxScore}
+        case PlayerList 
+        of nil then WinnerList 
+        [] H|T then 
+            CurrentScore ID in 
+            {Send H.mybomberPort add(point 0 CurrentScore)}
+            {Wait CurrentScore}  
+            if (CurrentScore > MaxScore) then {CheckScore T [H] CurrentScore}
+            elseif (CurrentScore == MaxScore) then {CheckScore T {Append WinnerList [H]} MaxScore}
+            else {CheckScore T WinnerList MaxScore}
+            end
+        end  
+      end
+    PlayerList 
+    in 
+        PlayerList= {Append GameState.playersList GameState.deadPlayersList}
+        {CheckScore  PlayerList.2 [PlayerList.1] PlayerList.1.score}       
+    end
+
 
     fun{GotAWinner GameState}
         WinnerList NewGameState Message 
@@ -913,19 +943,22 @@ in
                 %Update info in State 
         [] hidePoint(Pos) then NewGameState in
                 NewGameState = {HidePoint GameState Pos}
+                {Show8 'HINING POINT '} 
                 {TreatStream Stail NewGameState FinalGamestate}
                 
         [] bombPlanted(Pos ExtendedBomber) then NewGameState in 
                 NewGameState = {BombPlanted GameState Pos ExtendedBomber}
-                {Show ' 3 in treat stream Bomb List is '# NewGameState.bombList}
+                {Show8 ' BOMBPLANTED'}
                 {TreatStream Stail NewGameState FinalGamestate}
 
          [] hideBonus(Pos) then NewGameState in
                 NewGameState = {HideBonus GameState Pos}
+                {Show8 ' HIDE BONUS'}
                 {TreatStream Stail NewGameState FinalGamestate}
 
          [] movePlayer(ID Pos ExtendedBomber) then NewGameState in 
                 NewGameState= {MovePlayer GameState Pos ExtendedBomber}
+                 {Show8 ' MOVE PLAYER'}
                 {TreatStream Stail NewGameState FinalGamestate} 
 
         [] doaction(ExtendedBomber Action)then
@@ -949,8 +982,9 @@ in
                 {TreatStream Stail GameState FinalGamestate} 
                 %Nex to review 
           [] executeAction(ActionList NewGameState) then 
-                    {Show6 ' ********** executeAction(ActionList NewGameState)************'}
+                    
                     {TreatStream ActionList GameState NewGameState}
+                {Show8 ' ********** executeAction(ActionList NewGameState)************'# NewGameState} 
                     {TreatStream Stail NewGameState FinalGamestate}
         [] testMessage(Coucou)then
                 Coucou='Coucou'
@@ -968,104 +1002,6 @@ in
       end
    end
 
-  /*
-  proc{ExecuteActions Stream GameState FinalGamestate}
-    %{System.show Stream.1}
-    case Stream
-    of nil then FinalGamestate= GameState
-    [] Message|Stail then
-           case Message
-            of movePlayer(ID Pos) then 
-            [] hideBonus(Pos) then 
-            [] hidePoint(Pos) then 
-            [] add(Type Option Result) then % add(point Bonus Result ExtendedBomber Pos) = 
-            [] bombPlanted(Pos) then 
-           end
-    end        
- end 
-
-
-
- fun{GetMessagesToBroadcast Message} 
-    case Messages
-    of nil then nil
-    [] CurrentMessage|Stail then
-           case CurrentMessage
-            of spawnPlayer(ID Pos) % Player <bomber> ID has spawn in <position> Pos
-              then  CurrentMessage|{Broadcast Stail} 
-            [] movePlayer(ID Pos) % Player <bomber> ID has move to <position> Pos
-                then  CurrentMessage|{Broadcast Stail} 
-            [] deadPlayer(ID) % Player <bomber> ID has died
-                then  CurrentMessage|{Broadcast Stail} 
-            [] bombPlanted(Pos) % Bomb has been planted at <position> Pos
-                then  CurrentMessage|{Broadcast Stail} 
-            [] bombExploded(Pos) % Bomb has exploded at <position> Pos
-                then  CurrentMessage|{Broadcast Stail} 
-            [] boxRemoved(Pos) % Tile at <position> Pos who previously had a box on it is now a floor
-                then  CurrentMessage|{Broadcast Stail} 
-             else {GetMessagesToBroadcast Stail}   
-           end
-    end        
- end
-
-
-  proc{ShowInWindows PortWindows MessageList}
-    case MessageList
-    of nil then skip
-    [] CurrentMessage|Stail then
-        case CurrentMessage
-        of buildWindow % Create and launch the window (no player on it).
-            then {Send PortWindow CurrentMessage} 
-            {ShowInWindows PortWindows Stail}
-        [] initPlayer(ID) % Initialize the <bomber> ID (doesn’t place the bomberman but just inform the GUI of it’s existence, allow to create the score place initialised to 0 and the lives counter initialised to Input.nbLives). For a given ID, this should only be used once.
-            then {Send PortWindow CurrentMessage} 
-            {ShowInWindows PortWindows Stail}
-        [] spawnPlayer(ID Pos) % Spawn the <bomber> ID at <position> Pos. The bomberman should be displayed on the board when sending this message.
-            then {Send PortWindow CurrentMessage} 
-            {ShowInWindows PortWindows Stail}
-        [] movePlayer(ID Pos) % Move the <bomber> ID at new position <position> Pos.
-            then {Send PortWindow CurrentMessage} 
-            {ShowInWindows PortWindows Stail}
-        [] hidePlayer(ID) % Hide the <bomber> ID. This removes the bomberman from the screen.
-            then {Send PortWindow CurrentMessage} 
-            {ShowInWindows PortWindows Stail}
-        [] spawnBonus(Pos) % Spawn the bonus at <position> Pos. The bonus should be displayed on the board when sending this message.
-            then {Send PortWindow CurrentMessage} 
-            {ShowInWindows PortWindows Stail}
-        [] hideBonus(Pos) % Hide the bonus at <position> Pos. This removes the bonus from the screen.
-            then {Send PortWindow CurrentMessage} 
-            {ShowInWindows PortWindows Stail}
-        [] spawnPoint(Pos) %
-            then {Send PortWindow CurrentMessage} 
-            {ShowInWindows PortWindows Stail}
-        [] hidePoint(Pos) % Same as for bonuses, but for points.
-            then {Send PortWindow CurrentMessage} 
-            {ShowInWindows PortWindows Stail}
-        [] spawnBox(Pos) %
-            then {Send PortWindow CurrentMessage} 
-            {ShowInWindows PortWindows Stail}
-        [] spawnBomb(Pos) %
-            then {Send PortWindow CurrentMessage} 
-            {ShowInWindows PortWindows Stail}
-        [] hideBox(Pos) % Same as for bonuses, but for boxes. For the initialisation, an additionnal parameter IsBonus is added. It should be put to true if the box is put over a bonus, false if the box is put over a point.
-            then {Send PortWindow CurrentMessage} 
-            {ShowInWindows PortWindows Stail}
-        [] lifeUpdate(ID Life) % Change the value of the counter for the number of lives left for <bomber> ID to the new number of <life> Life (put the new value Life as number of lives left for the bomberman).
-            then {Send PortWindow CurrentMessage} 
-            {ShowInWindows PortWindows Stail}
-        [] scoreUpdate(ID Score) % Change the value of the counter for the score for <bomber> ID to the new number of <score> Score (put the new value Score as score for the bomberman).
-             then {Send PortWindow CurrentMessage} 
-            {ShowInWindows PortWindows Stail}
-        [] displayWinner(ID) % Inform the end of the game, giving the <bomber> ID of the highest score bomberman.
-            then {Send PortWindow CurrentMessage} 
-            {ShowInWindows PortWindows Stail}
-         else 
-            {ShowInWindows PortWindows Stail}
-        end
-    end        
- end
-
- */
    
 end % End Module
 
