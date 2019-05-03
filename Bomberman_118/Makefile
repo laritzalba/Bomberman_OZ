@@ -26,12 +26,8 @@ Main.ozf :
 	@ozc -c Main.oz
 Input.ozf :
 	@ozc -c Input.oz
-Player000basic.ozf :
-	@ozc -c Player000basic.oz
 Player000simultaneous.ozf :
 	@ozc -c Player000simultaneous.oz
-smart :
-	@ozc -c Player000extension.oz
 Player000survivor.ozf:
 	@ozc -c Player000survivor.oz
 Player000extension.ozf:
@@ -41,4 +37,4 @@ run :
 	@ozengine Main.ozf
 
 clean :
-	@rm -rf GUI.ozf Input.ozf Main.ozf PlayerManager.ozf GameControler.ozf Player000basic.ozf Player000simultaneous.ozf Player000survivor.ozf Player000extension.ozf Player000extension.ozf GameControlerBomber.ozf
+	@rm -rf GUI.ozf Input.ozf Main.ozf PlayerManager.ozf GameControler.ozf Player000simultaneous.ozf Player000survivor.ozf Player000extension.ozf Player000extension.ozf GameControlerBomber.ozf

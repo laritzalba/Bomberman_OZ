@@ -185,9 +185,6 @@ in
          end
    end
 
-   %fun{ExitValue X Y}
-   %end
-
    proc{FindMin A B Min Tie}
       if A == null orelse A.arg == null then
          if B == null orelse B.arg == null then
@@ -225,11 +222,6 @@ in
          {Show 'W danger value'#W.arg}
          E = tile(x:Pos.x+1 y:Pos.y arg:{DangerValue Map Pos.x+1 Pos.y})
          {Show 'E danger value'#E.arg}
-      /*elseif Type == exit then
-         N = tile(x:Pos.x y:Pos.y-1 arg:{ExitValue Pos.x Pos.y-1})
-         S = tile(x:Pos.x y:Pos.y+1 arg:{ExitValue Pos.x Pos.y+1})
-         W = tile(x:Pos.x-1 y:Pos.y arg:{ExitValue Pos.x-1 Pos.y})
-         E = tile(x:Pos.x+1 y:Pos.y arg:{ExitValue Pos.x+1 Pos.y})*/
       end
       {FindMin N S MinY TieY}
       {FindMin W E MinX TieX}
@@ -262,27 +254,9 @@ in
                Result = pt(x:N.x y:N.y)#pt(x:S.x y:S.y)#pt(x:W.x y:W.y)#pt(x:E.x y:E.y)
                Nbr = 4
             end
-         elseif TieX == false andthen TieY == false then %Erreur dans ce if
-            %Correction à vérifier
+         elseif TieX == false andthen TieY == false then
             Result = pt(x:MinX.x y:MinX.y)#pt(x:MinY.x y:MinY.y)
             Nbr = 2
-            /*if N == MinY then
-               if W == MinY then %N W
-                  Result = pt(x:N.x y:N.y)#pt(x:W.x y:W.y)
-                  Nbr = 2
-               else %N E
-                  Result = pt(x:N.x y:N.y)#pt(x:E.x y:E.y)
-                  Nbr = 2
-               end
-            else
-               if W == MinY then %S W
-                  Result = pt(x:S.x y:S.y)#pt(x:W.x y:W.y)
-                  Nbr = 2
-               else %S E
-                  Result = pt(x:S.x y:S.y)#pt(x:E.x y:E.y)
-                  Nbr = 2
-               end
-            end*/
          elseif TieX == true andthen TieY == false then
             {FindMin MinX N Min1 Tie1}
             if Tie1 == true then %W E N
@@ -333,7 +307,17 @@ in
       NewPos
    end
 
-   %Action to survive
+   /*
+    * Drop a bomb if possible in 0.1 of the case or if it impossible to move if the tile is safe
+    * Move in the safest direction in 0.9 other case or if there is no bomb left if tile is safe
+    * Move in the safest direction if current tile is not safe
+    * Do nothing if no action is possible
+    * @NewPlayerInfo: bounded to PlayerInfo if player has moved or if no action could be done,
+    *             bounded to an updated version of Info player where bombs is decreased by one if a bomb was droped
+    * @Action: is bound to bomb(PlayerInfo.currentPos) if a bomb was drop,
+    *          to move(pos) where pos is the new player position if the player has moved,
+    *          to null if no action could be done (player is off the board or trapped with no wall left)
+    */
    proc{DoAction PlayerInfo Action NewPlayerInfo}
       {Show 'DoAction Player info:'#PlayerInfo}
       if {DangerValue PlayerInfo.map PlayerInfo.currentPos.x PlayerInfo.currentPos.y} > 0 then %Not on a safe tile => move
