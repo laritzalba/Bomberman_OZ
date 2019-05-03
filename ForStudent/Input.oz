@@ -34,13 +34,14 @@ define
    ReplaceValInList
    CreateMap
    RandomPositionNotSpawn
+   DefaultMap
 in 
 
 %%%% Style of game %%%%
    
-   IsTurnByTurn = false
-   UseExtention = false
-   PrintOK = true  
+   IsTurnByTurn =true
+   UseExtention = true
+   PrintOK = false
 
 
 %%%% Description of the map %%%%
@@ -113,30 +114,31 @@ in
    end
 
    % Create a random Map,  Attention --> NbRow >=3 and NbColumn >=3
-   fun{CreateMap}
+   fun{CreateMap DefaultMap}
       Map RandPos
    in 
-    Map = {NewRow NbRow} % this is the call for random map
-    RandPos = {RandomPositionNotSpawn}
-    {ReplaceValInList Map {ReplaceValInList {Nth Map RandPos.y} 4 RandPos.x 1} RandPos.y 1}
+      if (UseExtention) then 
+         Map = {NewRow NbRow} % this is the call for random map
+         RandPos = {RandomPositionNotSpawn}
+         {ReplaceValInList Map {ReplaceValInList {Nth Map RandPos.y} 4 RandPos.x 1} RandPos.y 1}
+      else DefaultMap end  
     end
 
    NbRow = 7
    NbColumn = 13
 
-    Map = {CreateMap}
+   DefaultMap = [[1 1 1 1 1 1 1 1 1 1 1 1 1]
+                  [1 4 0 2 2 2 2 2 2 2 0 4 1]
+                  [1 0 1 3 1 2 1 2 1 2 1 0 1]
+                  [1 2 2 2 3 2 2 2 2 3 2 2 1]
+                  [1 0 1 2 1 2 1 3 1 2 1 0 1]
+                  [1 4 0 2 2 2 2 2 2 2 0 4 1]
+                  [1 1 1 1 1 1 1 1 1 1 1 1 1]]
 
 
-/* Map = [[1 1 1 1 1 1 1 1 1 1 1 1 1]
-	  [1 4 0 2 2 2 2 2 2 2 0 4 1]
-	  [1 0 1 3 1 2 1 2 1 2 1 0 1]
-	  [1 2 2 2 3 2 2 2 2 3 2 2 1]
-	  [1 0 1 2 1 2 1 3 1 2 1 0 1]
-	  [1 4 0 2 2 2 2 2 2 2 0 4 1]
-	  [1 1 1 1 1 1 1 1 1 1 1 1 1]]
-*/
+   %Map initiale
 
-/*Map = [[1 1 1 1 1 1 1 1 1 1 1 1 1]
+/*DefaultMap = [[1 1 1 1 1 1 1 1 1 1 1 1 1]
 	  [1 4 0 0 0 0 0 0 0 0 0 4 1]
 	  [1 0 0 0 0 0 0 0 0 0 1 0 1]
 	  [1 0 0 2 3 2 2 2 2 3 2 2 1]
@@ -146,7 +148,7 @@ in
 */
 
 % Map to test if player avoid walls and boxes properly
-/*Map = [[1 1 1 1 1 1 1 1 1 1 1 1 1]
+/*DefaultMap = [[1 1 1 1 1 1 1 1 1 1 1 1 1]
 	  [1 4 0 0 1 0 2 0 0 2 0 4 1]
 	  [1 0 0 0 1 0 3 0 0 2 0 0 1]
 	  [1 1 1 1 0 0 0 0 0 2 2 2 1]
@@ -155,21 +157,28 @@ in
 	  [1 1 1 1 1 1 1 1 1 1 1 1 1]]
    
 */
-   %%%%%%%%% ATTENTION %%%%%%%%%%
-   
+
+   Map = {CreateMap DefaultMap}
 
  
 
 %%%% Players description %%%%
 
-   NbBombers = 6
-   Bombers = [player000basic player000basic player000basic player000basic player000basic player000bomber]
-   ColorBombers = [yellow red blue green white black]
+   NbBombers = 2
+   Bombers = [player000survivor player000survivor]
+   ColorBombers = [blue red]
+   %player000simultaneous
+   %player000survivor
+   %player003John
+   %random
+   %player001name
+   %player100advanced
+   %player038Luigi
 
 %%%% Parameters %%%%
 
-   NbLives = 10
-   NbBombs = 10
+   NbLives = 5
+   NbBombs = 2
  
    ThinkMin = 50  % in millisecond
    ThinkMax = 200 % in millisecond

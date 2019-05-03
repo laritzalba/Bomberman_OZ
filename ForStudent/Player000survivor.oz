@@ -41,7 +41,7 @@ define
    % Debug
    Show Show2
    LocalDebug= false
-   LocalDebug2= false
+   LocalDebug2= true
 in
 %%% TOOLS %%%%
   proc {Show Msg} %Used for info messages (in this file)
@@ -645,7 +645,7 @@ in
    proc{TreatStream Stream PlayerInfo}
      case Stream of nil then skip
      []Head|Tail then
-         {Show 'TreatStream'#PlayerInfo.id.id#'stream message:'#Head}
+         {Show2 'TreatStream'#PlayerInfo.id.id#'stream message:'#Head}
          case Head of getId(BomberID) then
             BomberID = PlayerInfo.id
             {TreatStream Tail PlayerInfo}

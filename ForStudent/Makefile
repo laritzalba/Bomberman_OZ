@@ -1,5 +1,5 @@
 # ----------------------------
-# group nb 108
+# group nb 118
 # noma1 : 68171400 Laritza Cabrera Alba
 # noma2 : 78531500 Magali Legast
 # ----------------------------
@@ -10,7 +10,7 @@ compile : compilePlayers GameControler.ozf PlayerManager.ozf GUI.ozf Main.ozf
 	@ozc -c *.oz
 
 compilePlayers:
-	@ozc -c Player000basic.oz Player000simultaneous.oz Player000survivor.oz
+	@ozc -c Player000survivor.oz Player000simultaneous.oz Player000basic.oz
 
 GameControler.ozf : 
 	@ozc -c GameControler.oz
