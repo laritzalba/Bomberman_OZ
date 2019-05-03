@@ -20,58 +20,9 @@ export
    playOnce:PlayOnce
    treatStream:TreatStream
 define
-  /* Show
-   Show2
-   Show3
-    Show4
-   UpdateGamestate
-   CreateState
-   InitBomb
-   RandName
-   RandomPositionNotSpawn
-   DropNthOfList
-   ShuffleListNumber
-   RandomPosition
-   KaBoom
-   CreateBomb
-   UpdateBomb
-   Play
-   PlayOneTurn
-   CheckHitBomber
-   CreateBonus
-   CreateBonusExtension
-   CreatePortBomberAndExtend
-   TestFunc
-   UpdateBoxe
-   DoAction
-   CheckIfAlive
-   GetIteminMap
-   UpdateInnerMap
-   ReplaceValInList
-   Replace
-   RefreshList
-   BroadcastMessage
-   FuncEvaluation
-   CreateListeToExplose
-   ExploseListPoints
-   HidePointInFire
-   CheckDamage
-   GetWinner
-   CountBoxesInList
-   CountMapBoxes
-   CreatePortBomberAndExtend
-   GetState
-   GotAWinner
-   AddWinnerMessage 
-   Find
-   CheckTimesUp
-   DecreaseTimeBombing
-    % Simultaneous
-    CreateBombSimultaneos
-   */
+  
     AccesToGameState
-    TreatStream
-     
+    TreatStream    
      
 
   % Debug
@@ -295,8 +246,7 @@ define
                     {Send BomberHited.mybomberPort getId(ID2)}
                     {Wait ID2}
                     {LoopToCheckDamage T {Append MessageList [deadPlayer(ID2)]} WindowsList Dead Alive }
-                else  % hited first Time
-                   {Show7 'GO HITED FIRST TIME ^^^^^^^^^^^^^^^*&*&*&*&*&'}     
+                else  % hited first Time    
                     Wind = {Append WindowsList [hidePlayer(ID)]}
                     case Result 
                     of death(NewLife) then
@@ -351,44 +301,37 @@ define
         end
     end 
 
-
-  
- % TO DO ATTENTION
   fun{CreateListeToExplose BombPos GameState}
-      fun{CheckLoop X Y Xsup Ysup N}
+      fun{CheckLoop X Y XAdj YAdj N}
             {Show 'Create List Explose 1'}
-             XFin YFin in
-            if(Xsup<0) then XFin=X-1 else XFin=(X)+(Xsup) end
-            if(Ysup<0) then YFin=Y-1 else YFin=(Y)+(Ysup) end
+             Xend Yend in
+            if(XAdj<0) then Xend=X-1 else Xend=(X)+(XAdj) end
+            if(YAdj<0) then Yend=Y-1 else Yend=(Y)+(YAdj) end
             {Show 'Create List Explose 2'}
-            if (XFin =< 0) then nil
-            elseif(XFin>Input.nbColumn) then nil
-            elseif(YFin=<0) then nil
-            elseif(YFin>Input.nbRow) then nil
+            if (Xend =< 0) then nil
+            elseif(Xend>Input.nbColumn) then nil
+            elseif(Yend=<0) then nil
+            elseif(Yend>Input.nbRow) then nil
             elseif(N=<0) then nil
             else
                 {Show 'Create List Explose 3'}
                 Point in 
-                Point = pt(x:X+Xsup y:Y+Ysup)
+                Point = pt(x:X+XAdj y:Y+YAdj)
                 {Show 'Bomb Pos'#Point}
                 if {Find GameState.boxPoint Point} 
                     then 
-                     {Show 'Create List Explose 4 Floor with box point ' # GameState.boxPoint}
-                    pt(x:XFin y:YFin)|nil % is a box with points 2
+                    pt(x:Xend y:Yend)|nil % is a box with points 2
                 elseif {Find GameState.boxBonus Point}  
                     then 
-                     {Show 'Create List Explose 5 Floor with spawn ' # GameState.boxBonus}
-                    pt(x:XFin y:YFin)|nil %is a box with bonus 3
+                    pt(x:Xend y:Yend)|nil %is a box with bonus 3
                 elseif {Find GameState.wfloorSapwan Point}
                     then 
-                     {Show 'Create List Explose 6' # GameState.wfloorSapwan}
-                    pt(x:XFin y:YFin)|{CheckLoop XFin YFin Xsup Ysup N-1} %% is a spawn position 4 
+                    pt(x:Xend y:Yend)|{CheckLoop Xend Yend XAdj YAdj N-1} %% is a spawn position 4 
                 else Item in
-                    Item= {Nth {Nth GameState.map Y+Ysup} X+Xsup} 
-                     {Show 'Create List Explose 7 (possible here are 1 and 0) Item found in map is: ' # Item}
+                    Item= {Nth {Nth GameState.map Y+YAdj} X+XAdj} 
                     case Item
                         of 1 then nil %% is a wall 1
-                        else  pt(x:XFin y:YFin)|{CheckLoop XFin YFin Xsup Ysup N-1} %% is a flooor tile 0
+                        else  pt(x:Xend y:Yend)|{CheckLoop Xend Yend XAdj YAdj N-1} %% is a flooor tile 0
                     end
                 end 
             end
@@ -483,7 +426,6 @@ fun{ExploseListPoints GameState ListPointToExplose Bomb}
       NewGameState2= {ExploseListPoints NewGamestate1 ListPointToExplose Bomb}
       {Send Bomb.extendedBomber.mybomberPort add(bomb 1 Result)}
       {Wait Result}
-      %{Delay 700} % ???
       {HidePointInFire NewGameState2 ListPointToExplose}
     end
 
@@ -497,8 +439,6 @@ fun{ExploseListPoints GameState ListPointToExplose Bomb}
      end 
 
      fun{CheckTimesUp TimingBomb}
-        NewtimingBomb 
-     in
         if (Input.isTurnByTurn) then
           if (TimingBomb == 0 ) then true 
           else  false  end           
@@ -653,9 +593,7 @@ fun{ExploseListPoints GameState ListPointToExplose Bomb}
             %[] add extention exemple shield 
             else nil                                           
             end
-    end 
-
-    
+    end    
 
 
     fun{RefreshList GameState}
@@ -687,12 +625,7 @@ fun{ExploseListPoints GameState ListPointToExplose Bomb}
        end 
      end
      
-    fun{FuncEvaluation GameState}
-        % TODO
-        0
-    end
-
-
+    
     fun{UpdateBombGamestate GameState}    
        % move and explose bomb 
        {UpdateBomb {RefreshList GameState}}
@@ -755,19 +688,13 @@ fun {GetWinner GameState}
     fun{GotAWinner GameState}
         WinnerList NewGameState Message 
     in 
-       {Show 'Got Winner 1'}
         WinnerList = {GetWinner GameState} 
-         {Show7 ' &&&&&&&&&&&&&& **************Got Winner &&&&&&&&&&&*************'}
-        {Show7 ' &&&&&&&&&&&&&& **************Got Winner 2'# WinnerList # {List.is WinnerList}}
-         {Show7 ' &&&&&&&&&&&&&& **************Got Winner &&&&&&&&&&&*************'}
         Message= {AddWinnerMessage WinnerList}
-        {Show 'winner message '#Message}
         NewGameState= {Adjoin GameState gameState(
                         endGame: true
                         winnerList:WinnerList
                         actionToShow: {Append GameState.actionToShow Message}    
         )}
-        {Show 'final actionto Show'#NewGameState.actionToShow}
         NewGameState
     end 
 
@@ -780,22 +707,23 @@ fun {GetWinner GameState}
         State
     end
 
+     fun{FuncEvaluation GameState}
+        % TODO
+        0
+    end
+    
     fun {IsGameOver  GameState}
         if (GameState.playersList == nil ) 
-            then   % every body dead --> end
-            {Show '2'} 
+            then   % every body dead --> end 
             true       
         elseif ({Length GameState.playersList } == 1) 
-            then  % one winner --> end show winner        
-            {Show '3 actionToShow' # GameState.actionToShow}                
+            then  % one winner --> end show winner                     
            true
         elseif GameState.nbRemainingBoxes == 0 
             then % there are not more boxes left --> end show winner(s)            
-            {Show2 '4'}
             true
         elseif({FuncEvaluation GameState} == 1) 
             then  % one winner --> end show winner  
-            {Show '5'}
              true
         else 
             false
@@ -809,8 +737,7 @@ fun {GetWinner GameState}
   fun {Play GameState ExtendedBomber}
     UpdateGameState NewGameState BroadC Tbegin Tend
   in   
-        if {CheckIfAlive ExtendedBomber} then  
-           {Show5 'Bomb List to update Last and first  here il faut decrementer '#GameState.bombList}       
+        if {CheckIfAlive ExtendedBomber} then      
           % this player is alive
             UpdateGameState = {UpdateBombGamestate GameState}
             {Show '1'}
@@ -818,30 +745,13 @@ fun {GetWinner GameState}
             if {IsGameOver GameState} then 
                {GotAWinner GameState} 
             else  MessageRec in % Continue to play               
-                {Show '6'}
-                {Show5 'List Bomb After UPDATE %%%%%%%%%%%%%%%%%/n'# UpdateGameState.bombList}
-                {Show5 '**********Actions to show after update bomb **********/n'# UpdateGameState.actionToShow}
                 MessageRec = {DoAction UpdateGameState ExtendedBomber}
                 if (MessageRec \= nil ) then ToBroadcast LastGamestate in 
-                    {Show '7.0' # MessageRec}
-                    {Show5 ' 2 Message to execute ' # MessageRec.1}
-                    {Show '7.0' # MessageRec.2}
-                    {Show '7.0' # MessageRec.3}
-                     {Show5 ' 2.1Message to show ' # MessageRec.3}
                     {TreatStream MessageRec.1 UpdateGameState NewGameState}
-                     {Show5 '5 After proceced list bomb: ' #NewGameState.bombList}
-                    % need to put show info dans le gamestate
-                    {Show '7'}
-                    %Broadcast Bomb and Do action 
-                    
                     ToBroadcast =  {Append NewGameState.messageList MessageRec.2}
-                    {Show 'ToBroadcats ' # ToBroadcast}
-                    {BroadcastMessage NewGameState.playersList  ToBroadcast}
-                    {Show '8'}
-                    
+                    {BroadcastMessage NewGameState.playersList ToBroadcast}                    
                     LastGamestate= {Adjoin NewGameState gameState(actionToShow:{Append NewGameState.actionToShow MessageRec.3}
                                                     messageList: ToBroadcast)} 
-                    {Show5 '**********Actions to show to show in windows **********/n'# LastGamestate.actionToShow}
                     LastGamestate 
                 else 
                     UpdateGameState
