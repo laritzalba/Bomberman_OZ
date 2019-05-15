@@ -1,0 +1,512 @@
+functor
+import
+   Input
+   Browser
+   Projet2019util
+   OS
+   System
+   GameControlerBomber
+export
+   portPlayer:StartPlayer
+define   
+   
+
+
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ % OzMinMAx Ozimax 
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  fun{Thinking GameState Lebel MaxLebel TMax ThisPlayer}
+     SimulatedState
+  in
+      if(TMax == unit) then  {FunctEvaluation GameState }
+      elseif (Score== 1 ) then {FunctEvaluation GameState } % exit  near to 1
+      elseif (Lebel == MaxLebel) then {FunctEvaluation GameState } %exit 
+      elseif (ThisPlayer == nil ) then 0 % exit fun evaluation in this if dead --> neutro ??? 
+      else ListActions ListScore IndexWithBestScore in
+          ListActions = {AdmisiblesActions GameState ThisPlayer} 
+          ListScore = {GetScore ListActions GameState Lebel MaxLebel TMax ThisPlayer ListScore}           
+          IndexWithBestScore = {ArgMax ListScore.2 ListScore.1 1}
+          ActionToDo= {Nth ListActions IndexWithBestScore}
+          rec (1:Score  2:ActionToDo)       
+      end  
+  end 
+
+ fun{GetScore  ListActions GameState Lebel MaxLebel TMax ThisPlayer}
+     case ListActions
+     of nil then Score 
+     [] Action |T then CurrentScore in 
+       CurrentGamestate= {AbstractGameState Action GameState ThisPlayer}
+       LengthList = {Lenght GameState.playersList}
+       NextPlayer= {ChoosNextPlayer GameState.playersList GameState.playersList ThisPlayer LengthList 1}
+       
+       CurrentScore = ({Thinking CuerrentGamestate Lebel+1  MaxLebel TMax NextPlayer} * ~1 )  
+       CurrentScore|{GetScore T CurrentGamestate Lebel MaxLebel TMax ThisPlayer  CurrentScore}    
+     end 
+   end 
+
+
+  fun{AbstractGameState Action GameState ThisPlayer}
+   GameState1 FinalGamestate 
+  in
+      GameState1= {GameControler.updateBombGamestate GameState}
+      % return a  Message Record with actions rec(1:State 2:Broadcast 3:Wind)
+      Rec = {GameControler.playOnce GameState1 ThisPlayer Action ThisPlayer.localID}
+      {GameControler.treatStream Rec.1 GameState FinalGamestate}
+  end 
+
+
+    fun{FunctEvaluation AbstractGameState ThisPlayer}
+    1  if end of game 
+
+   thengo si tengo la mayor cantidad de puntos 
+   
+   else  0  
+     chequear
+   end  
+ 
+ end 
+
+
+
+  fun{PlayDoAction ID Action GameState}
+   TMax Lebel MaxLebel ThisPlayer Score GameStateClon
+  in          
+    Lebel = 1 
+    MaxLebel= 3
+    {Time.alarm Input.thinkMin TMax}
+    GameStateClon = {CloningGamestate GameState} % qaui hay que poner una lista de los player de mi timpo con:
+                                                 % position, vidas, puntos, state, nbbobs, etc 
+    ThisPlayer =  me 
+    {Thinking GameStateClon Lebel MaxLebel TMax ThisPlayer}
+   end
+
+
+
+
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% END HELPER %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+   fun{AdmisiblesActions GameState}
+ 
+ end
+
+ fun {ArgMax ListScore Max I N}
+     case ListScore
+     of nil then I
+     [] H|T then
+         if (H > Max) then 
+            {ArgMax ListScore H N N+1}
+         else 
+            {ArgMax ListScore Max I N+1}
+         end 
+     end 
+ end 
+ 
+fun{ChoosNextPlayer PlayersList OriginalList CurrentPlayer LengthList Count}
+    case PlayersList 
+    of nil then nil 
+    [] H|T then
+      if (CurrentPlayer.localID == H.localID) then 
+         if {LengthList == Count} then OriginalList.1 % choose first il list 
+         else 
+            T.1 % choose next 
+         end  
+      else
+       {ChoosNextPlayer T OriginalList CurrentPlayer Count+1}
+      end 
+    end  
+end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% END HELPER %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   
+   %%%%%%%%%%%%%%%%Treatmen and handling of received messages
+in 
+   fun{StartPlayer ID}
+      local
+         Stream Port OutputStream PlayerInfo Rivals
+      in
+         Rivals = nil
+         PlayerInfo = infos(id:ID lives:Input.nbLives bombs:Input.nbBombs score: 0 state:off currentPos:null initPos:null map:Input.map rivals:Rivals)
+         LocalGameState = GameControlerBomber.createState) 
+         
+         thread %% filter to test validity of message sent to the player
+            OutputStream = {Projet2019util.portPlayerChecker Name ID Stream}
+         end
+         {NewPort Stream Port}
+         thread
+            {TreatStream OutputStream PlayerInfo}
+         end
+         Port
+      end
+   end
+   
+   
+   proc{TreatStream Stream PlayerInfo} %% TODO you may add some arguments if needed
+     case Stream of nil then skip
+     []Head|Tail then
+         case Head of getId(BomberID) then
+            BomberID = PlayerInfo.id
+            %{Show }
+            {TreatStream Tail PlayerInfo}
+         []getState(BomberID BomberState) then
+            BomberID = PlayerInfo.id
+            BomberState = PlayerInfo.state
+            {TreatStream Tail PlayerInfo}
+         []assignSpawn(Pos) then
+            local
+               NewPlayer
+            in
+               NewPlayer = infos(id: PlayerInfo.id lives:PlayerInfo.lives bombs:PlayerInfo.bombs score: PlayerInfo.score state:PlayerInfo.state currentPos:Pos initPos:Pos map:PlayerInfo.map rivals:PlayerInfo.rivals)
+               {TreatStream Tail NewPlayer} %TODO Est-ce que cette position a été vérifiée comme possible?
+            end
+         []spawn(BomberID BomberPos) then
+            local
+               NewPlayer
+            in
+               {MakeSpawn PlayerInfo NewPlayer}
+               if NewPlayer \= null then %Bomber could spawn
+                  BomberID = PlayerInfo.id
+                  BomberPos = PlayerInfo.currentPos
+               else %Bomber could not spawn
+                  BomberID = null
+                  BomberPos = null
+               end
+               {TreatStream Tail NewPlayer}
+            end
+         []doaction(BomberID BomberAction) then
+            local
+               NewPlayer
+            in
+               {Show 'TreatStream - Asked to do action'}
+               {DoAction PlayerInfo BomberAction NewPlayer}
+               if BomberAction == null then %The player is off the board and no action could be done
+                  BomberID = null
+               else
+                  BomberID = NewPlayer.id
+               end
+               {TreatStream Tail NewPlayer}
+            end
+         []add(Type Option BomberResult) then
+            local
+               NewPlayer
+            in
+               {AddObject Type Option PlayerInfo NewPlayer BomberResult}
+               {TreatStream Tail NewPlayer}
+            end
+         []gotHit(BomberID BomberResult) then
+            local
+               NewPlayer
+            in
+               {TakeHit PlayerInfo NewPlayer}
+               BomberID = NewPlayer.id
+               BomberResult = death(NewPlayer.lives)
+               {TreatStream Tail NewPlayer}
+            end
+         []info(M) then
+               NewPlayer
+            in
+               NewPlayer = {ManageInfo M PlayerInfo}
+               {TreatStream Tail NewPlayer}
+         end
+      end
+   end
+
+
+
+
+   proc{TreatStream Stream GameState FinalGamestate}
+    case Stream
+    of nil then FinalGamestate= GameState
+    [] Message|Stail then
+           case Message
+        of play(NewGameState ExtendedBomber) then 
+                {Show2 'PLAY THIS GAMESTATE IS BOUND '#GameState.actionToShow}
+                NewGameState= {Play GameState ExtendedBomber}
+                 {Show2 'play(NewGameState ExtendedBomber)' # NewGameState.actionToShow}
+                {TreatStream Stail NewGameState FinalGamestate}
+
+        [] decision(DecisionResult) then NewGameState in
+                if GameState.decision == true then 
+                    NewGameState= {Adjoin GameState gameState(decision:false)}
+                    DecisionResult = true 
+                    {TreatStream Stail NewGameState FinalGamestate}
+                else 
+                    DecisionResult = false 
+                    {Show6 'decision(DecisionResult)'# DecisionResult}
+                    {TreatStream Stail GameState FinalGamestate} 
+                end
+        [] freeGameState() then  NewGameState in
+                NewGameState= {Adjoin GameState gameState(decision:true)}
+                 {Show6 'updatingDecision(Val)'}
+                {TreatStream Stail NewGameState FinalGamestate}
+        [] askChange(Res) then 
+	                 Res=GameState.isChanging
+	                {TreatStream Stail GameState FinalGamestate}
+        [] changing(Res) then NewGameState in
+	             NewGameState={Adjoin GameState gameState(isChanging:Res)}
+	             {TreatStream Stail NewGameState FinalGamestate}
+
+        [] getSecondDecision(SecondDecision) then NewGameState in 
+                 if GameState.secondDecision == true then 
+                    NewGameState= {Adjoin GameState gameState(secondDecision:false)}
+                    SecondDecision = true 
+                    {TreatStream Stail NewGameState FinalGamestate}
+                else 
+                    SecondDecision = false 
+                    {Show6 'second get decision(DecisionResult)'# SecondDecision}
+                    {TreatStream Stail NewGameState FinalGamestate} 
+                end               
+            
+        []freeSecondDecision() then NewGameState in
+                NewGameState= {Adjoin GameState gameState(secondDecision:true)}
+                {Show6 'freeSecondDecision()'}
+                {TreatStream Stail NewGameState FinalGamestate}        
+
+        [] getGameState(ResultGameState) then 
+                ResultGameState= GameState
+                {Show2 'THIS GAMESTATE IS BOUND '#GameState}
+                {Show2 'get Gamestate()' #ResultGameState}
+                {TreatStream Stail GameState FinalGamestate}
+
+        [] updateGameState(NewGameState) then 
+                {Show2 'update NewGamestate'}
+                {TreatStream Stail NewGameState FinalGamestate}
+        [] updateBombGamestate(GamestateUpToDate) then 
+                 GamestateUpToDate= {UpdateBombGamestate GameState}
+                 {TreatStream Stail GamestateUpToDate FinalGamestate}
+                %Update info in State 
+        [] hidePoint(Pos) then NewGameState in
+                NewGameState = {HidePoint GameState Pos}
+                {Show8 'HINING POINT '} 
+                {TreatStream Stail NewGameState FinalGamestate}
+                
+        [] bombPlanted(Pos ExtendedBomber) then NewGameState in 
+                NewGameState = {BombPlanted GameState Pos ExtendedBomber}
+                {Show8 ' BOMBPLANTED'}
+                {TreatStream Stail NewGameState FinalGamestate}
+
+         [] hideBonus(Pos) then NewGameState in
+                NewGameState = {HideBonus GameState Pos}
+                {Show8 ' HIDE BONUS'}
+                {TreatStream Stail NewGameState FinalGamestate}
+
+         [] movePlayer(ID Pos ExtendedBomber) then NewGameState in 
+                NewGameState= {MovePlayer GameState Pos ExtendedBomber}
+                 {Show8 ' MOVE PLAYER'}
+                {TreatStream Stail NewGameState FinalGamestate} 
+
+        [] doaction(ExtendedBomber Action Fisnish)then
+                Action = {DoAction GameState ExtendedBomber}
+                Fisnish = true
+                {TreatStream Stail GameState FinalGamestate}
+
+        [] add(Type Option Result ExtendedBomber Pos) then NewGameState in 
+                NewGameState = {Add GameState Type Option Result ExtendedBomber Pos} 
+                {TreatStream Stail NewGameState FinalGamestate}            
+        
+        [] isGameOver(IsEnded) then 
+                IsEnded= {IsGameOver GameState} 
+                {TreatStream Stail GameState FinalGamestate} 
+
+          [] getBomberEtat(AmIDead Bomberman) then 
+                AmIDead = {FindBomber GameState.deadPlayersList Bomberman}
+                {TreatStream Stail GameState FinalGamestate} 
+                
+          [] broadcast(ToBroadcast) then 
+                {BroadcastMessage GameState.playersList ToBroadcast}
+                {TreatStream Stail GameState FinalGamestate} 
+                %Nex to review 
+          [] executeAction(ActionList NewGameState) then 
+                    
+                    {TreatStream ActionList GameState NewGameState}
+                {Show8 ' ********** executeAction(ActionList NewGameState)************'# NewGameState} 
+                    {TreatStream Stail NewGameState FinalGamestate}
+        [] testMessage(Coucou)then
+                Coucou='Coucou'
+                {TreatStream Stail GameState FinalGamestate}
+        [] getWinner(LastGAmestate) then 
+                LastGAmestate = {GotAWinner GameState} 
+                {TreatStream Stail LastGAmestate FinalGamestate} % close port  ? nil
+        [] clean() then  NewGameState in
+              NewGameState = {RefreshList GameState} 
+             {TreatStream Stail NewGameState FinalGamestate}
+        else
+	        {System.show 'unsupported message'#Message}
+	        {TreatStream Stail GameState FinalGamestate}
+         end
+      end
+   end
+
+
+   
+end %End Module
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+
+
+ Step to do in thinking 
+
+
+
+   fun{Test List Score}
+      case List
+      of nil then nil 
+      []H|T then
+	 Score * {Think Time Score}|{Test T 2}
+      end
+   end
+   
+   
+   fun {ArgMax ListScore Max I N}
+      case ListScore
+       of nil then I
+	[] H|T then
+	 if (H > Max) then 
+            {ArgMax ListScore H N N+1}
+	 else 
+	    {ArgMax ListScore Max I N+1}
+	  end 
+      end 
+   end 
+   
+   fun{Think Time Score}
+      if (Time == unit ) then Score
+      else ListScore ActionToDo  IndexWithBestScore ListAction in
+	 ListAction = [1 2 3 4]
+	 ListScore = {Test ListAction Score}
+	 IndexWithBestScore = {ArgMax ListScore.2 ListScore.1 1 1}
+	 ActionToDo= {Nth ListAction IndexWithBestScore}
+	 ActionToDo
+      end 
+   end 
+   
+   
+in
+    {Time.alarm 200 T}
+    {Show5 'helo'#{Think T 5}}  
+    {Show5 'end'}
+
+
+
+*/
+
+
+
+  /*
+  proc{ExecuteActions Stream GameState FinalGamestate}
+    %{System.show Stream.1}
+    case Stream
+    of nil then FinalGamestate= GameState
+    [] Message|Stail then
+           case Message
+            of movePlayer(ID Pos) then 
+            [] hideBonus(Pos) then 
+            [] hidePoint(Pos) then 
+            [] add(Type Option Result) then % add(point Bonus Result ExtendedBomber Pos) = 
+            [] bombPlanted(Pos) then 
+            
+           end
+    end        
+ end 
+
+
+
+ fun{GetMessagesToBroadcast Message} 
+    case Messages
+    of nil then nil
+    [] CurrentMessage|Stail then
+           case CurrentMessage
+            of spawnPlayer(ID Pos) % Player <bomber> ID has spawn in <position> Pos
+              then  CurrentMessage|{Broadcast Stail} 
+            [] movePlayer(ID Pos) % Player <bomber> ID has move to <position> Pos
+                then  CurrentMessage|{Broadcast Stail} 
+            [] deadPlayer(ID) % Player <bomber> ID has died
+                then  CurrentMessage|{Broadcast Stail} 
+            [] bombPlanted(Pos) % Bomb has been planted at <position> Pos
+                then  CurrentMessage|{Broadcast Stail} 
+            [] bombExploded(Pos) % Bomb has exploded at <position> Pos
+                then  CurrentMessage|{Broadcast Stail} 
+            [] boxRemoved(Pos) % Tile at <position> Pos who previously had a box on it is now a floor
+                then  CurrentMessage|{Broadcast Stail} 
+             else {GetMessagesToBroadcast Stail}   
+           end
+    end        
+ end
+
+
+  proc{ShowInWindows PortWindows MessageList}
+    case MessageList
+    of nil then skip
+    [] CurrentMessage|Stail then
+        case CurrentMessage
+        of buildWindow % Create and launch the window (no player on it).
+            then {Send PortWindow CurrentMessage} 
+            {ShowInWindows PortWindows Stail}
+        [] initPlayer(ID) % Initialize the <bomber> ID (doesn’t place the bomberman but just inform the GUI of it’s existence, allow to create the score place initialised to 0 and the lives counter initialised to Input.nbLives). For a given ID, this should only be used once.
+            then {Send PortWindow CurrentMessage} 
+            {ShowInWindows PortWindows Stail}
+        [] spawnPlayer(ID Pos) % Spawn the <bomber> ID at <position> Pos. The bomberman should be displayed on the board when sending this message.
+            then {Send PortWindow CurrentMessage} 
+            {ShowInWindows PortWindows Stail}
+        [] movePlayer(ID Pos) % Move the <bomber> ID at new position <position> Pos.
+            then {Send PortWindow CurrentMessage} 
+            {ShowInWindows PortWindows Stail}
+        [] hidePlayer(ID) % Hide the <bomber> ID. This removes the bomberman from the screen.
+            then {Send PortWindow CurrentMessage} 
+            {ShowInWindows PortWindows Stail}
+        [] spawnBonus(Pos) % Spawn the bonus at <position> Pos. The bonus should be displayed on the board when sending this message.
+            then {Send PortWindow CurrentMessage} 
+            {ShowInWindows PortWindows Stail}
+        [] hideBonus(Pos) % Hide the bonus at <position> Pos. This removes the bonus from the screen.
+            then {Send PortWindow CurrentMessage} 
+            {ShowInWindows PortWindows Stail}
+        [] spawnPoint(Pos) %
+            then {Send PortWindow CurrentMessage} 
+            {ShowInWindows PortWindows Stail}
+        [] hidePoint(Pos) % Same as for bonuses, but for points.
+            then {Send PortWindow CurrentMessage} 
+            {ShowInWindows PortWindows Stail}
+        [] spawnBox(Pos) %
+            then {Send PortWindow CurrentMessage} 
+            {ShowInWindows PortWindows Stail}
+        [] spawnBomb(Pos) %
+            then {Send PortWindow CurrentMessage} 
+            {ShowInWindows PortWindows Stail}
+        [] hideBox(Pos) % Same as for bonuses, but for boxes. For the initialisation, an additionnal parameter IsBonus is added. It should be put to true if the box is put over a bonus, false if the box is put over a point.
+            then {Send PortWindow CurrentMessage} 
+            {ShowInWindows PortWindows Stail}
+        [] lifeUpdate(ID Life) % Change the value of the counter for the number of lives left for <bomber> ID to the new number of <life> Life (put the new value Life as number of lives left for the bomberman).
+            then {Send PortWindow CurrentMessage} 
+            {ShowInWindows PortWindows Stail}
+        [] scoreUpdate(ID Score) % Change the value of the counter for the score for <bomber> ID to the new number of <score> Score (put the new value Score as score for the bomberman).
+             then {Send PortWindow CurrentMessage} 
+            {ShowInWindows PortWindows Stail}
+        [] displayWinner(ID) % Inform the end of the game, giving the <bomber> ID of the highest score bomberman.
+            then {Send PortWindow CurrentMessage} 
+            {ShowInWindows PortWindows Stail}
+         else 
+            {ShowInWindows PortWindows Stail}
+        end
+    end        
+ end
+
+ */

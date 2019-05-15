@@ -1,0 +1,29 @@
+Hi!
+
+The schedule for the demo is available on moodle! If there is any issue with the planning, please send an email. Ada means the Ada Lovelace room, at 2nd floor just after the secretariat and b074 is the small room just at the left before entering the Intel room.
+
+The demo is 15 min long. Be there at your time slot. Both the member of the group should be there. Think also about preparing the corresponding Input files for each of the scenarios and to have everything compiled!
+
+Here is what you have to show us :
+
+1) Turn by turn, no extensions, 2 players (one of each of the mendatory players) on a small map (7x7 max) 
+
+2) Simultaneous, no extensions, 2 players (one of each of the mendatory players) on a small map (7x7 max)
+
+3) Turn by turn, no extensions, 5 players (from yours, only, may be multiple times the same) on a bigger map (15x15 max)
+
+4) Simultaneous, no extensions, 5 players (from yours, only, may be multiple times the same) on a bigger map (15x15 max)
+
+5) Turn by turn, no extensions, as many players as you want (your best one vs the one from the other groups you tested with) on a map as you want
+
+6) If you have extension, another scenario of your choice
+
+What we hope to see is a bit of every action (placing a bomb, seeing one player die,...) implemented.
+
+If you didn't have the time to implement the simultaneous, just skip 2 and 4. 
+
+After showing the scenarios, some questions will be asked to you.
+
+Have a nice week-end,
+
+Hélène
